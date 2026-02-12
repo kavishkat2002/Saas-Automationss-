@@ -18,7 +18,14 @@ export default function Products() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", price: "", category: "", stock_quantity: "", description: "" });
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    category: "",
+    stock_quantity: "",
+    description: "",
+    image_url: ""
+  });
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", businessId],
@@ -39,10 +46,17 @@ export default function Products() {
         category: form.category || null,
         stock_quantity: parseInt(form.stock_quantity) || 0,
         description: form.description || null,
+        image_url: form.image_url || null,
       });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["products"] }); toast({ title: "Product added" }); setOpen(false); setForm({ name: "", price: "", category: "", stock_quantity: "", description: "" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast({ title: "Product added" });
+      setOpen(false);
+      setForm({ name: "", price: "", category: "", stock_quantity: "", description: "", image_url: "" });
+    },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -67,6 +81,7 @@ export default function Products() {
               </div>
               <div className="space-y-2"><Label>Category</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
               <div className="space-y-2"><Label>Description</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Image URL</Label><Input value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="https://example.com/product.jpg" /></div>
               <Button type="submit" className="w-full" disabled={addProduct.isPending}>Save</Button>
             </form>
           </DialogContent>

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search } from "lucide-react";
+import { logNewLead } from "@/lib/ai-activity";
 
 export default function Customers() {
   const { businessId } = useBusiness();
@@ -33,11 +34,17 @@ export default function Customers() {
 
   const addCustomer = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("customers").insert({ ...form, business_id: businessId! });
+      const { data, error } = await supabase.from("customers").insert({ ...form, business_id: businessId! }).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: async (newCustomer) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+
+      // AI: Log new lead detection
+      await logNewLead(businessId!, newCustomer.id, "Manual Entry");
+
       toast({ title: "Customer added" });
       setOpen(false);
       setForm({ name: "", email: "", phone: "", lead_status: "cold" });

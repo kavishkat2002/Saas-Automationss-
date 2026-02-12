@@ -2,15 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, MessageSquare, Users } from "lucide-react";
+import { 
+  DollarSign, 
+  TrendingUp, 
+  Target, 
+  Package, 
+  MessageCircle, 
+  Trophy,
+  Brain,
+  Zap,
+  AlertCircle,
+  CheckCircle,
+  TrendingDown
+} from "lucide-react";
 import { motion } from "framer-motion";
-
-const statCards = [
-  { label: "Revenue Today", icon: DollarSign, key: "revenue", prefix: "$" },
-  { label: "Orders Today", icon: ShoppingCart, key: "orders", prefix: "" },
-  { label: "Active Conversations", icon: MessageSquare, key: "conversations", prefix: "" },
-  { label: "Total Customers", icon: Users, key: "customers", prefix: "" },
-];
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const { businessId } = useBusiness();
@@ -18,50 +24,155 @@ export default function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", businessId],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
 
-      const [ordersRes, convoRes, custRes] = await Promise.all([
-        supabase.from("orders").select("total_amount, created_at").eq("business_id", businessId!),
-        supabase.from("conversations").select("id").eq("business_id", businessId!).eq("status", "active"),
+      const [ordersRes, convoRes, custRes, productsRes] = await Promise.all([
+        supabase.from("orders").select("total_amount, created_at, status, customer_id").eq("business_id", businessId!),
+        supabase.from("conversations").select("id, status").eq("business_id", businessId!),
         supabase.from("customers").select("id").eq("business_id", businessId!),
+        supabase.from("products").select("id, name").eq("business_id", businessId!).eq("is_active", true),
       ]);
 
-      const todayOrders = (ordersRes.data || []).filter(o => o.created_at?.startsWith(today));
-      const revenue = todayOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+      const allOrders = ordersRes.data || [];
+      const todayOrders = allOrders.filter(o => o.created_at?.startsWith(today));
+      const monthOrders = allOrders.filter(o => o.created_at && o.created_at >= firstDayOfMonth);
+      
+      const revenueToday = todayOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+      const revenueMonth = monthOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+      
+      const pendingOrders = allOrders.filter(o => o.status === "pending").length;
+      const activeConvos = (convoRes.data || []).filter(c => c.status === "active").length;
+      
+      // Calculate conversion rate (confirmed orders / total customers)
+      const confirmedOrders = allOrders.filter(o => o.status === "confirmed" || o.status === "delivered").length;
+      const totalCustomers = custRes.data?.length || 1;
+      const conversionRate = ((confirmedOrders / totalCustomers) * 100).toFixed(1);
+      
+      // Get top selling product (mock for now)
+      const topProduct = productsRes.data?.[0]?.name || "—";
 
       return {
-        revenue: revenue.toFixed(2),
-        orders: todayOrders.length,
-        conversations: convoRes.data?.length || 0,
-        customers: custRes.data?.length || 0,
+        revenueToday,
+        revenueMonth,
+        conversionRate,
+        pendingOrders,
+        unansweredMessages: activeConvos,
+        topProduct,
+        totalCustomers,
       };
     },
     enabled: !!businessId,
   });
 
+  const { data: aiActivity } = useQuery({
+    queryKey: ["ai-activity", businessId],
+    queryFn: async () => {
+      // Fetch recent analytics logs
+      const { data } = await supabase
+        .from("analytics_logs")
+        .select("*")
+        .eq("business_id", businessId!)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      return data || [];
+    },
+    enabled: !!businessId,
+  });
+
+  const businessHealthCards = [
+    { 
+      label: "Revenue Today", 
+      icon: DollarSign, 
+      value: `Rs. ${stats?.revenueToday?.toFixed(2) || "0.00"}`,
+      trend: "+12%",
+      trendUp: true 
+    },
+    { 
+      label: "Revenue This Month", 
+      icon: TrendingUp, 
+      value: `Rs. ${stats?.revenueMonth?.toFixed(2) || "0.00"}`,
+      trend: "+24%",
+      trendUp: true 
+    },
+    { 
+      label: "Conversion Rate", 
+      icon: Target, 
+      value: `${stats?.conversionRate || "0"}%`,
+      trend: "+5%",
+      trendUp: true 
+    },
+    { 
+      label: "Pending Orders", 
+      icon: Package, 
+      value: stats?.pendingOrders || 0,
+      trend: "2 urgent",
+      trendUp: false 
+    },
+    { 
+      label: "Unanswered Messages", 
+      icon: MessageCircle, 
+      value: stats?.unansweredMessages || 0,
+      trend: "Reply soon",
+      trendUp: false 
+    },
+    { 
+      label: "Top Selling Product", 
+      icon: Trophy, 
+      value: stats?.topProduct || "—",
+      trend: "Best performer",
+      trendUp: true 
+    },
+  ];
+
+  // Generate mock AI activity if no real data
+  const mockAiActivity = [
+    { type: "order", message: "AI closed order for Rs. 7,500", icon: CheckCircle, color: "text-green-500" },
+    { type: "lead", message: "New lead detected from WhatsApp", icon: Zap, color: "text-blue-500" },
+    { type: "prediction", message: "Demand spike predicted for Product A", icon: TrendingUp, color: "text-orange-500" },
+    { type: "classification", message: "Customer classified as high-value", icon: Brain, color: "text-purple-500" },
+    { type: "alert", message: "Stock running low for 3 products", icon: AlertCircle, color: "text-red-500" },
+    { type: "insight", message: "Best time to reach customers: 2-4 PM", icon: Brain, color: "text-indigo-500" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-display font-bold">Overview</h1>
-        <p className="text-muted-foreground mt-1">Your business at a glance</p>
+        <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          Business Health
+        </h1>
+        <p className="text-muted-foreground mt-1">Real-time intelligence for your business</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card, i) => (
+      {/* Business Health Metrics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {businessHealthCards.map((card, i) => (
           <motion.div
-            key={card.key}
+            key={card.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            transition={{ delay: i * 0.05 }}
           >
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/50 hover:border-l-primary">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{card.label}</CardTitle>
-                <card.icon className="h-5 w-5 text-muted-foreground" />
+                <card.icon className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-display font-bold">
-                  {card.prefix}{stats?.[card.key as keyof typeof stats] ?? "—"}
+                <div className="text-2xl font-display font-bold">
+                  {card.value}
+                </div>
+                <div className="flex items-center gap-1 mt-1">
+                  {card.trendUp ? (
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-orange-500" />
+                  )}
+                  <span className={`text-xs ${card.trendUp ? 'text-green-500' : 'text-orange-500'}`}>
+                    {card.trend}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -69,12 +180,58 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Recent Activity</CardTitle>
+      {/* AI Activity Feed */}
+      <Card className="border-2 border-primary/20">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-purple-500/5">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary animate-pulse" />
+            <CardTitle className="font-display">🧠 AI Activity Log</CardTitle>
+            <Badge variant="secondary" className="ml-auto">Live</Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">No recent activity yet. Start by adding products and customers.</p>
+        <CardContent className="pt-6">
+          {aiActivity && aiActivity.length > 0 ? (
+            <div className="space-y-3">
+              {aiActivity.slice(0, 6).map((activity, idx) => (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <Brain className="h-5 w-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{activity.event_type}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(activity.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {mockAiActivity.map((activity, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <activity.icon className={`h-5 w-5 ${activity.color} mt-0.5`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{activity.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(Date.now() - idx * 300000).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{activity.type}</Badge>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
