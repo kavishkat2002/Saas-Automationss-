@@ -19,7 +19,28 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const { order_id, status, custom_message } = await req.json();
+        const payload = await req.json();
+        let order_id, status, custom_message;
+
+        // Auto-detect if called via Database Webhook or Manual API
+        if (payload.type === "UPDATE" && payload.table === "orders") {
+            console.log("Triggered via Database Webhook");
+            const record = payload.record;
+            const oldRecord = payload.old_record;
+
+            if (record.status === oldRecord.status) {
+                console.log("Status unchanged, skipping notification.");
+                return new Response(JSON.stringify({ message: "Status unchanged" }), { headers: corsHeaders, status: 200 });
+            }
+
+            order_id = record.id;
+            status = record.status;
+        } else {
+            console.log("Triggered via Manual API Call");
+            order_id = payload.order_id;
+            status = payload.status;
+            custom_message = payload.custom_message;
+        }
 
         if (!order_id) {
             throw new Error("Missing order_id");
@@ -52,6 +73,24 @@ serve(async (req) => {
         const customer = order.customers;
         if (!customer) {
             throw new Error("Customer not found for this order");
+        }
+
+        const businessId = order.business_id;
+        // Fetch Business WhatsApp Credentials
+        const { data: business } = await supabase
+            .from("businesses")
+            .select("whatsapp_api_token, whatsapp_phone_number_id, name")
+            .eq("id", businessId)
+            .single();
+
+        // Fallback to Env Vars if DB columns are empty (for single-tenant setups)
+        const WHATSAPP_TOKEN = business?.whatsapp_api_token || Deno.env.get("WHATSAPP_API_TOKEN");
+        // We can't easily fallback ID if not provided, but we'll try env if available
+        const PHONE_NUMBER_ID = business?.whatsapp_phone_number_id || Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+
+        if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+            console.error("Missing WhatsApp Credentials for Business:", businessId);
+            // We still continue to log to DB messages, but we can't send WA msg
         }
 
         // Determine status message
@@ -106,8 +145,8 @@ serve(async (req) => {
         }
 
         messageText += `\n📋 *Order Details:*\n`;
-        messageText += `Order ID: #${order.id.slice(0, 8)}\n`;
-        messageText += `Total Amount: Rs. ${Number(order.total_amount).toFixed(2)}\n`;
+        messageText += `Order ID: #${order.id.slice(0, 5)}\n`; // Shortened ID
+        messageText += `Total Amount: ${order.total_amount}\n`;
 
         // Add items summary if needed, keeping it brief
         if (order.order_items && order.order_items.length > 0) {
@@ -121,32 +160,34 @@ serve(async (req) => {
 
         let sent = false;
 
-        // Check if Telegram customer
-        if (customer.phone && customer.phone.startsWith("telegram:")) {
-            const telegramId = customer.phone.split(":")[1];
-            const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-
-            if (botToken) {
-                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        // SEND WHATSAPP MESSAGE
+        if (WHATSAPP_TOKEN && PHONE_NUMBER_ID && customer.phone) {
+            try {
+                const res = await fetch(`https://graph.facebook.com/v17.0/${PHONE_NUMBER_ID}/messages`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Authorization": `Bearer ${WHATSAPP_TOKEN}`,
+                        "Content-Type": "application/json",
+                    },
                     body: JSON.stringify({
-                        chat_id: telegramId,
-                        text: messageText,
-                        parse_mode: "Markdown",
+                        messaging_product: "whatsapp",
+                        to: customer.phone,
+                        text: { body: messageText },
                     }),
                 });
 
-                const result = await response.json();
-                if (result.ok) {
+                const data = await res.json();
+                if (res.ok) {
+                    console.log("WhatsApp message sent successfully:", data);
                     sent = true;
-                    console.log("Telegram message sent successfully");
                 } else {
-                    console.error("Telegram API error:", result);
+                    console.error("Failed to send WhatsApp message:", data);
                 }
-            } else {
-                console.error("TELEGRAM_BOT_TOKEN not set");
+            } catch (e) {
+                console.error("Error sending WhatsApp message:", e);
             }
+        } else {
+            console.log("Skipping WhatsApp send via Graph API. Token/PhoneID/CustomerPhone missing.");
         }
 
         // Also save to database messages table if a conversation exists
@@ -176,7 +217,7 @@ serve(async (req) => {
             status: 200,
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error processing request:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
