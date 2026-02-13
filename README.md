@@ -10,6 +10,30 @@ SmartBiz AI Connect is a futuristic AI-powered business automation engine that i
 - **Payment Verification**: AI-powered bank receipt verification to confirm transfers automatically.
 - **Business Dashboard**: A sleek, modern React dashboard to manage products, orders, and customer conversations.
 
+---
+
+## 👥 Professional Roles & Contributions
+
+This project highlights a multidisciplinary approach to building modern AI-driven enterprise solutions:
+
+### **Business Analyst Role**
+
+*Precision in Business Logic & Digital Transformation*
+
+- **Strategy & Mapping**: Defined the end-to-end customer journey on WhatsApp to ensure a frictionless "Chat-to-Checkout" experience.
+- **Requirement Engineering**: Bridged the gap between business needs and technical execution, ensuring the automated order flow aligns with standard retail operations.
+- **Value Optimization**: Focused on reducing manual overhead by automating order status notifications and bank receipt verification processes.
+
+### **AI Software Engineer Role**
+
+*Innovation in Multi-modal AI & Orchestration*
+
+- **Visual Intelligence**: Implemented **Gemini 2.0 Vision** models via OpenRouter, utilizing "Chain-of-Thought" prompting for high-accuracy product identification.
+- **System Orchestration**: Architected the background processing logic using **EdgeRuntime.waitUntil** to handle heavy AI tasks without violating messaging server timeouts.
+- **Full-Stack AI Integration**: Developed the secure integration between Supabase (PostgreSQL), Deno Edge Functions, and the WhatsApp Business API.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, Lucide Icons, Framer Motion.
