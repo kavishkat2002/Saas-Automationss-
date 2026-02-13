@@ -434,6 +434,7 @@ export type Database = {
           business_id: string
           category: string | null
           created_at: string
+          currency: string | null
           description: string | null
           id: string
           image_url: string | null
@@ -441,12 +442,14 @@ export type Database = {
           name: string
           price: number
           stock_quantity: number | null
+          stock_unit: string | null
           updated_at: string
         }
         Insert: {
           business_id: string
           category?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -454,12 +457,14 @@ export type Database = {
           name: string
           price?: number
           stock_quantity?: number | null
+          stock_unit?: string | null
           updated_at?: string
         }
         Update: {
           business_id?: string
           category?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -467,6 +472,7 @@ export type Database = {
           name?: string
           price?: number
           stock_quantity?: number | null
+          stock_unit?: string | null
           updated_at?: string
         }
         Relationships: [
