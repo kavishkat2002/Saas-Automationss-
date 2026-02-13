@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MessageSquare, CreditCard, Users } from "lucide-react";
+import { Building2, MessageSquare, CreditCard, Users, Banknote } from "lucide-react";
 
 export default function SettingsPage() {
   const { business, userRole } = useBusiness();
@@ -17,12 +17,26 @@ export default function SettingsPage() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankAccountHolder, setBankAccountHolder] = useState("");
+  const [bankBranch, setBankBranch] = useState("");
+  const [bankSwiftCode, setBankSwiftCode] = useState("");
+  const [paymentGatewayLink, setPaymentGatewayLink] = useState("");
+  const [paymentGatewayName, setPaymentGatewayName] = useState("");
 
   const updateBusiness = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("businesses").update({
         name: name || business?.name,
         contact_email: contactEmail || business?.contact_email,
+        bank_name: bankName || business?.bank_name || null,
+        bank_account_number: bankAccountNumber || business?.bank_account_number || null,
+        bank_account_holder: bankAccountHolder || business?.bank_account_holder || null,
+        bank_branch: bankBranch || business?.bank_branch || null,
+        bank_swift_code: bankSwiftCode || business?.bank_swift_code || null,
+        payment_gateway_link: paymentGatewayLink || business?.payment_gateway_link || null,
+        payment_gateway_name: paymentGatewayName || business?.payment_gateway_name || null,
       }).eq("id", business!.id);
       if (error) throw error;
     },
@@ -40,6 +54,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="business">
         <TabsList>
           <TabsTrigger value="business" className="gap-2"><Building2 className="h-4 w-4" />Business</TabsTrigger>
+          <TabsTrigger value="bank" className="gap-2"><Banknote className="h-4 w-4" />Bank & Payment</TabsTrigger>
           <TabsTrigger value="whatsapp" className="gap-2"><MessageSquare className="h-4 w-4" />WhatsApp</TabsTrigger>
           <TabsTrigger value="plans" className="gap-2"><CreditCard className="h-4 w-4" />Plans</TabsTrigger>
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" />Team</TabsTrigger>
@@ -69,6 +84,90 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="bank" className="mt-6">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display">Bank Details</CardTitle>
+                <CardDescription>Configure your bank account details to share with customers for payments</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Bank Name</Label>
+                  <Input
+                    placeholder="e.g., Bank of America"
+                    defaultValue={business?.bank_name || ""}
+                    onChange={e => setBankName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Holder Name</Label>
+                  <Input
+                    placeholder="e.g., John's Business LLC"
+                    defaultValue={business?.bank_account_holder || ""}
+                    onChange={e => setBankAccountHolder(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Number</Label>
+                  <Input
+                    placeholder="e.g., 1234567890"
+                    defaultValue={business?.bank_account_number || ""}
+                    onChange={e => setBankAccountNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Bank Branch (Optional)</Label>
+                  <Input
+                    placeholder="e.g., Main Street Branch"
+                    defaultValue={business?.bank_branch || ""}
+                    onChange={e => setBankBranch(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>SWIFT/BIC Code (Optional)</Label>
+                  <Input
+                    placeholder="e.g., BOFAUS3N"
+                    defaultValue={business?.bank_swift_code || ""}
+                    onChange={e => setBankSwiftCode(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display">Payment Gateway</CardTitle>
+                <CardDescription>Configure payment gateway links to send to customers</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Payment Gateway Name</Label>
+                  <Input
+                    placeholder="e.g., PayPal, Stripe, Square"
+                    defaultValue={business?.payment_gateway_name || ""}
+                    onChange={e => setPaymentGatewayName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Gateway Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="e.g., https://paypal.me/yourbusiness"
+                    defaultValue={business?.payment_gateway_link || ""}
+                    onChange={e => setPaymentGatewayLink(e.target.value)}
+                  />
+                </div>
+                {userRole === "owner" && (
+                  <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending}>
+                    Save Payment Settings
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="whatsapp" className="mt-6">
