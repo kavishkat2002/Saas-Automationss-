@@ -16,7 +16,7 @@ const navItems = [
   { label: "Customers", icon: Users, path: "/dashboard/customers" },
   { label: "Orders", icon: ShoppingCart, path: "/dashboard/orders" },
   { label: "Products", icon: Package, path: "/dashboard/products" },
-  { label: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
+  { label: "Chat", icon: MessageSquare, path: "/dashboard/chat" },
   { label: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
   { label: "AI Insights", icon: Brain, path: "/dashboard/ai-insights" },
   { label: "Settings", icon: Settings, path: "/dashboard/settings" },
