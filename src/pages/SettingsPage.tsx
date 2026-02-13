@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, MessageSquare, CreditCard, Users, Banknote } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
   const { business, userRole } = useBusiness();
@@ -24,6 +32,9 @@ export default function SettingsPage() {
   const [bankSwiftCode, setBankSwiftCode] = useState("");
   const [paymentGatewayLink, setPaymentGatewayLink] = useState("");
   const [paymentGatewayName, setPaymentGatewayName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [description, setDescription] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
 
   const updateBusiness = useMutation({
     mutationFn: async () => {
@@ -37,6 +48,9 @@ export default function SettingsPage() {
         bank_swift_code: bankSwiftCode || business?.bank_swift_code || null,
         payment_gateway_link: paymentGatewayLink || business?.payment_gateway_link || null,
         payment_gateway_name: paymentGatewayName || business?.payment_gateway_name || null,
+        business_type: businessType || (business as any)?.business_type || null,
+        description: description || (business as any)?.description || null,
+        contact_phone: whatsappPhone || business?.contact_phone || null,
       }).eq("id", business!.id);
       if (error) throw error;
     },
@@ -70,6 +84,31 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <Label>Business Name</Label>
                 <Input defaultValue={business?.name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Business Type</Label>
+                <Select onValueChange={setBusinessType} defaultValue={(business as any)?.business_type || ""}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select business type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="retail">Retail Store</SelectItem>
+                    <SelectItem value="restaurant">Restaurant / Cafe</SelectItem>
+                    <SelectItem value="service">Service Provider</SelectItem>
+                    <SelectItem value="ecommerce">E-commerce</SelectItem>
+                    <SelectItem value="wholesale">Wholesale</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Description <span className="text-xs text-muted-foreground">(Used by AI to answer customers)</span></Label>
+                <Textarea
+                  placeholder="e.g. We sell fresh organic vegetables directly from farmers..."
+                  defaultValue={(business as any)?.description || ""}
+                  onChange={e => setDescription(e.target.value)}
+                  className="min-h-[100px]"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Contact Email</Label>
@@ -176,8 +215,19 @@ export default function SettingsPage() {
               <CardTitle className="font-display">WhatsApp Configuration</CardTitle>
               <CardDescription>Configure your WhatsApp Business API integration</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">WhatsApp integration settings will be available once you connect your provider. Contact support for setup assistance.</p>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground text-sm">Configure your WhatsApp contact details. The AI Bot will use this context.</p>
+              <div className="space-y-2">
+                <Label>WhatsApp Number (Contact Phone)</Label>
+                <Input
+                  placeholder="+1234567890"
+                  defaultValue={business?.contact_phone || ""}
+                  onChange={e => setWhatsappPhone(e.target.value)}
+                />
+              </div>
+              {userRole === "owner" && (
+                <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending}>Save WhatsApp Settings</Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
