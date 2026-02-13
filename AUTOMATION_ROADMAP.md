@@ -48,6 +48,13 @@
 - AI activity logging
 - Real-time total calculation
 
+### 6. AI Automation Engine ✅
+
+- **Multimodal Vision AI**: Identify products from user-uploaded photos (Gemini Integration)
+- **Smart Recommendations**: Suggest similar products when exact match is out of stock
+- **Interactive Ordering**: Bot guides user from photo -> identification -> stock check -> order
+- **Automated Responses**: Handles catalog requests and general queries
+
 ### 6.Architecture - Multi-Tenancy ✅
 
 **VERIFIED:** All tables include `business_id`:
