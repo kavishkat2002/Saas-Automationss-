@@ -11,11 +11,11 @@ const corsHeaders = {
 type ConversationState =
     | "browsing"
     | "cart_building"
-    | "checkout_method" // ask Delivery or Pickup 
-    | "checkout_address" // ask Address/Contact (Delivery) or Contact (Pickup)
-    | "checkout_payment" // ask Card, Bank, COD
-    | "awaiting_payment" // waiting for receipt if Bank
-    | "awaiting_receipt" // waiting for receipt upload
+    | "checkout_method"
+    | "checkout_address"
+    | "checkout_payment"
+    | "awaiting_payment"
+    | "awaiting_receipt"
     | "order_tracking";
 
 interface CartItem {
@@ -54,7 +54,6 @@ serve(async (req) => {
         // Check Deep Link (/start <business_id>) if applicable
         const startMatch = text.match(/^\/start\s+([a-zA-Z0-9-]+)/);
         if (startMatch && startMatch[1]) {
-            // Logic to force switch context if provided
             const { data: validBiz } = await supabase.from("businesses").select("id").eq("id", startMatch[1]).single();
             if (validBiz) businessId = validBiz.id;
         }
@@ -63,20 +62,18 @@ serve(async (req) => {
         if (!businessId) {
             const { data: customerRecords } = await supabase.from("customers").select("id, business_id").eq("phone", `telegram:${userId}`);
             if (customerRecords && customerRecords.length > 0) {
-                // Prioritize active conversation
                 const { data: latestConvo } = await supabase.from("conversations").select("*").in("customer_id", customerRecords.map((c: any) => c.id)).eq("channel", "telegram").eq("status", "active").order("last_message_at", { ascending: false }).limit(1).single();
                 if (latestConvo) {
                     businessId = latestConvo.business_id;
                     conversation = latestConvo;
                 } else {
-                    businessId = customerRecords[0].business_id; // Default to last known
+                    businessId = customerRecords[0].business_id;
                 }
             }
         }
 
         // Fallback or Welcome New User
         if (!businessId) {
-            // simplified fallback for demo
             const { data: allBiz } = await supabase.from("businesses").select("id").limit(1);
             if (allBiz && allBiz.length > 0) businessId = allBiz[0].id;
         }
@@ -132,7 +129,6 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_API_KEY");
 
-    // Log User Message
     await supabase.from("messages").insert({
         conversation_id: conversation.id, sender_type: "customer", content: text, message_type: "text"
     });
@@ -158,11 +154,10 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
         return;
     }
 
-    // STATE: BROWSING / CART BUILDING
     if (state === "browsing" || state === "cart_building") {
         if (intent === "start" || intent === "greeting") {
             const { data: biz } = await supabase.from("businesses").select("name").eq("id", businessId).single();
-            const welcome = `👋 Welcome to *${biz.name}*!\n\nI can help you with:\n📦 Catalog\n🛒 View Cart\n📋 Order History\n💬 Chat for Assistance\n\nJust tell me what you need!`;
+            const welcome = `👋 Welcome to *${biz.name}* (v2 AI)!\n\nI can help you with:\n📦 Catalog\n🛒 View Cart\n📋 Order History\n💬 Chat for Assistance\n\nJust tell me what you need!`;
             await sendResponse(chatId, conversation.id, welcome, supabase, TELEGRAM_BOT_TOKEN);
         }
         else if (intent === "catalog") {
@@ -184,16 +179,14 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
             }
         }
         else {
-            // Assume Order Intent or General Chat
             const { data: products } = await supabase.from("products").select("*").eq("business_id", businessId).eq("is_active", true);
             const productSummary = products?.map((p) => `${p.name} ($${p.price}/${p.stock_unit || 'unit'})`).join(", ");
 
-            // AI Extraction
             let extraction = await extractOrderDetails(text, productSummary, GEMINI_API_KEY!);
 
             if (extraction && extraction.items && extraction.items.length > 0) {
-                // Add to Cart Logic
-                let newCart = conversation.metadata.cart || [];
+                const currentCart = conversation.metadata.cart || [];
+                const newCart = [...currentCart];
                 let addedItems = [];
 
                 for (const item of extraction.items) {
@@ -217,19 +210,18 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
 
                 if (addedItems.length > 0) {
                     await updateState(conversation.id, "cart_building", { cart: newCart }, supabase);
-                    await sendResponse(chatId, conversation.id, `🛒 Added:\n${addedItems.join("\n")}\n\nReply 'View Cart' or 'Checkout' when ready.`, supabase, TELEGRAM_BOT_TOKEN);
+                    await sendResponse(chatId, conversation.id, `🛒 Added (v2):\n${addedItems.join("\n")}\n\nReply 'View Cart' or 'Checkout' when ready.`, supabase, TELEGRAM_BOT_TOKEN);
                 } else {
-                    await sendResponse(chatId, conversation.id, "🤔 I couldn't match those items to our catalog. Please check the product names again.", supabase, TELEGRAM_BOT_TOKEN);
+                    const aiReply = await chatWithGemini(text, "Sales Assistant", "Retail", "Assisting customer", productSummary, GEMINI_API_KEY!);
+                    await sendResponse(chatId, conversation.id, aiReply || "I assume you want to browse. Try asking for our catalog!", supabase, TELEGRAM_BOT_TOKEN);
                 }
             } else {
-                // Fallback to General AI Chat
                 const aiReply = await chatWithGemini(text, "Sales Assistant", "Retail", "Assisting customer", productSummary, GEMINI_API_KEY!);
                 await sendResponse(chatId, conversation.id, aiReply || "I assume you want to browse. Try asking for our catalog!", supabase, TELEGRAM_BOT_TOKEN);
             }
         }
     }
 
-    // STATE: CHECKOUT FLOW
     else if (state === "checkout_method") {
         const lower = text.toLowerCase();
         if (lower.includes("deliver")) {
@@ -243,7 +235,6 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
         }
     }
     else if (state === "checkout_address") {
-        // Store address details (simplified: just storing the text blob)
         await updateState(conversation.id, "checkout_payment", { contact_details: text }, supabase);
         await sendResponse(chatId, conversation.id, "💳 payment option: 'Card', 'Bank Transfer', or 'COD'?", supabase, TELEGRAM_BOT_TOKEN);
     }
@@ -253,9 +244,8 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
         const total = cart.reduce((acc: number, item: any) => acc + (item.quantity * item.unit_price), 0);
 
         if (lower.includes("card")) {
-            // Create Order immediately
             const order = await createOrder(businessId, customer.id, cart, total, "card", "pending", conversation.metadata.contact_details, conversation.metadata.delivery_method, supabase);
-            await updateState(conversation.id, "browsing", { cart: [] }, supabase); // Reset
+            await updateState(conversation.id, "browsing", { cart: [] }, supabase);
             await sendResponse(chatId, conversation.id, `🔗 Payment Link for Order #${order.id.slice(0, 5)}: [Link Placeholder]\nOrder Created!`, supabase, TELEGRAM_BOT_TOKEN);
         }
         else if (lower.includes("bank") || lower.includes("transfer")) {
@@ -275,25 +265,24 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
             await sendResponse(chatId, conversation.id, "Please choose 'Card', 'Bank Transfer', or 'COD'.", supabase, TELEGRAM_BOT_TOKEN);
         }
     }
-    // AWAITING RECEIPT is handled in Photo Handler mainly, but text handler should handle cleanup or queries.
     else if (state === "awaiting_receipt") {
         await sendResponse(chatId, conversation.id, "📸 Please upload the payment receipt photo to confirm your order.", supabase, TELEGRAM_BOT_TOKEN);
     }
 }
 
 // ==========================================
-// PHOTO HANDLER (RECEIPT VERIFICATION)
+// PHOTO HANDLER
 // ==========================================
 async function handlePhotoMessage(message: any, chatId: number, businessId: string, customer: any, conversation: any, supabase: any) {
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_API_KEY");
     const state = conversation.metadata?.state;
 
-    // Log Image
-    const photo = message.photo[message.photo.length - 1];
     await supabase.from("messages").insert({
-        conversation_id: conversation.id, sender_type: "customer", content: "Sent a photo", message_type: "image", metadata: { file_id: photo.file_id }
+        conversation_id: conversation.id, sender_type: "customer", content: "Sent a photo", message_type: "image", metadata: { file_id: message.photo[message.photo.length - 1].file_id }
     });
+
+    const photo = message.photo[message.photo.length - 1];
 
     if (state === "awaiting_receipt" && conversation.metadata.current_order_id) {
         await sendTelegramMessage(chatId, "🔍 Verifying receipt...", TELEGRAM_BOT_TOKEN);
@@ -307,7 +296,6 @@ async function handlePhotoMessage(message: any, chatId: number, businessId: stri
         const verification = await verifyReceiptWithGemini(base64, GEMINI_API_KEY!);
 
         if (verification && verification.is_valid_receipt) {
-            // Mark Order as Paid
             const orderId = conversation.metadata.current_order_id;
             await supabase.from("orders").update({ payment_status: "paid", status: "confirmed" }).eq("id", orderId);
 
@@ -317,10 +305,9 @@ async function handlePhotoMessage(message: any, chatId: number, businessId: stri
             await sendTelegramMessage(chatId, "⚠️ Could not verify receipt. Please upload a clear photo of the bank transfer receipt.", TELEGRAM_BOT_TOKEN);
         }
     } else {
-        // Normal Image Search (Visual Search)
         await sendTelegramMessage(chatId, "🔍 Searching for products...", TELEGRAM_BOT_TOKEN);
-        // ... (Existing visual search logic from previous step would go here)
-        await sendTelegramMessage(chatId, "Visual search logic invoked (placeholder for now).", TELEGRAM_BOT_TOKEN);
+        // Placeholder for visual search logic
+        await sendTelegramMessage(chatId, "Visual search coming soon.", TELEGRAM_BOT_TOKEN);
     }
 }
 
@@ -345,7 +332,8 @@ async function createOrder(businessId: string, customerId: string, cart: any[], 
 
 async function updateState(conversationId: string, newState: ConversationState, extraMeta: any, supabase: any) {
     const { data: old } = await supabase.from("conversations").select("metadata").eq("id", conversationId).single();
-    const newMeta = { ...old.metadata, ...extraMeta, state: newState };
+    const oldMeta = old?.metadata || {};
+    const newMeta = { ...oldMeta, ...extraMeta, state: newState };
     await supabase.from("conversations").update({ metadata: newMeta }).eq("id", conversationId);
 }
 
@@ -393,16 +381,22 @@ function detectIntent(text: string): string {
 }
 
 // AI Helpers
+function safeJSONParse(text: string) {
+    try {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+        return JSON.parse(text);
+    } catch { return null; }
+}
+
 async function extractOrderDetails(text: string, productSummary: string, apiKey: string) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const payload = {
         contents: [{
             parts: [{
-                text: `Extract product orders from user text. 
-            Available Products: ${productSummary}. 
-            User Text: "${text}".
-            Return valid JSON: { "items": [{ "product_name": "exact_match_from_list", "quantity": number }] }. 
-            If no products found, return items: []. Ignore unrelated text. Handle 'kg', 'packs' as best guess quantity.` }]
+                text: `System: Extract product orders. Products: [${productSummary}]. User: "${text}".
+            Return only a strictly valid JSON object like: { "items": [{ "product_name": "exact_match", "quantity": number }] }. 
+            If no products found, items should be empty array.` }]
         }]
     };
     try {
@@ -410,20 +404,18 @@ async function extractOrderDetails(text: string, productSummary: string, apiKey:
         const data = await response.json();
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!raw) return null;
-        return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+        return safeJSONParse(raw);
     } catch { return null; }
 }
 
 async function chatWithGemini(userText: string, context: string, type: string, desc: string, catalog: string, apiKey: string) {
-    // Reusing previous logic context
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const payload = {
         contents: [{
             parts: [{
-                text: `Role: Sales AI for ${context} (${type}). 
-            Catalog: ${catalog}. 
-            User: "${userText}". 
-            Task: Answer question or guide to catalog. Be brief.` }]
+                text: `System: You are an AI sales assistant for ${context}. Catalog: ${catalog}. 
+            User says: "${userText}". 
+            Task: Helper user. If they want to buy, kindly ask them to check the catalog or just say product names. Be brief.` }]
         }]
     };
     try {
@@ -438,7 +430,7 @@ async function verifyReceiptWithGemini(base64: string, apiKey: string) {
     const payload = {
         contents: [{
             parts: [
-                { text: "Analyze this image. Is it a bank transfer receipt? Extract date, amount, and reference. Return JSON: { \"is_valid_receipt\": boolean, \"date\": \"YYYY-MM-DD\", \"amount\": \"100.00\", \"reference\": \"...\" }" },
+                { text: "Analyze this image. Is it a bank transfer receipt? Return JSON: { \"is_valid_receipt\": boolean, \"date\": \"YYYY-MM-DD\", \"amount\": \"100.00\", \"reference\": \"...\" }" },
                 { inline_data: { mime_type: "image/jpeg", data: base64 } }
             ]
         }]
@@ -447,7 +439,7 @@ async function verifyReceiptWithGemini(base64: string, apiKey: string) {
         const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         const data = await response.json();
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim()); // Basic parsing
+        return safeJSONParse(raw || "");
     } catch { return null; }
 }
 
