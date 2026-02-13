@@ -26,13 +26,95 @@ serve(async (req) => {
         const username = message.from.username || message.from.first_name || "Unknown";
         const text = message.text || "";
 
-        // For demo: Use first business
-        const { data: businesses } = await supabase.from("businesses").select("id").limit(1);
-        if (!businesses || businesses.length === 0) throw new Error("No business found");
-        const businessId = businesses[0].id;
+        // ==========================================
+        // MULTI-TENANCY RESOLUTION LOGIC
+        // ==========================================
+        let businessId: string | null = null;
+        let customer = null;
+        let conversation = null;
+
+        // 1. Check Deep Link (/start <business_id>)
+        // Format: /start <uuid>
+        if (text.startsWith("/start ") && text.trim().split(" ").length > 1) {
+            const potentialId = text.trim().split(" ")[1];
+            // Simple check if it looks like a UUID (length 36 usually, but loose check is fine)
+            if (potentialId.length > 20) {
+                const { data: validBiz } = await supabase.from("businesses").select("id, name").eq("id", potentialId).single();
+                if (validBiz) {
+                    businessId = validBiz.id;
+                    console.log(`Deep Link: Connecting ${username} to ${validBiz.name} (${businessId})`);
+                    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+                    if (TELEGRAM_BOT_TOKEN) {
+                        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ chat_id: chatId, text: `🔌 Connected to ${validBiz.name}!` })
+                        });
+                    }
+                }
+            }
+        }
+
+        // 2. Resolve based on Conversation History (if no deep link found)
+        if (!businessId) {
+            // Find all customers linked to this Telegram ID
+            const { data: customerRecords } = await supabase
+                .from("customers")
+                .select("id, business_id")
+                .eq("phone", `telegram:${userId}`);
+
+            if (customerRecords && customerRecords.length > 0) {
+                const customerIds = customerRecords.map((c: any) => c.id);
+
+                // Find the most recently active conversation across ALL businesses for this user
+                const { data: latestConvo } = await supabase
+                    .from("conversations")
+                    .select("business_id, last_message_at")
+                    .in("customer_id", customerIds)
+                    .eq("channel", "telegram")
+                    .eq("status", "active")
+                    .order("last_message_at", { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (latestConvo) {
+                    businessId = latestConvo.business_id;
+                    console.log(`Context: Using most recent conversation with business ${businessId}`);
+                } else {
+                    // No active conversation found, default to first customer record's business
+                    businessId = customerRecords[0].business_id;
+                    console.log(`Context: Defaulting to business ${businessId} from customer record`);
+                }
+            }
+        }
+
+        // 3. Fallback for Unknown User (New user, no deep link)
+        if (!businessId) {
+            // Check if there is only one business in the DB (Single Tenant Mode / Demo)
+            const { data: allBiz } = await supabase.from("businesses").select("id").limit(2);
+
+            if (allBiz && allBiz.length === 1) {
+                // If only 1 business exists, safe to default to it
+                businessId = allBiz[0].id;
+            } else {
+                // Multiple businesses exist, request explicit connection
+                const msg = "👋 Welcome! To chat with a specific store, please use their 'Chat with us' link or scan their QR code to start.";
+                const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+                if (TELEGRAM_BOT_TOKEN) {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: msg })
+                    });
+                }
+                return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+        }
+
+        // At this point we have a valid businessId
+        // Proceed to Create/Get Customer and Conversation for THIS businessId
 
         // 1. FIND OR CREATE CUSTOMER
-        let { data: customer } = await supabase.from("customers").select("*").eq("business_id", businessId).eq("phone", `telegram:${userId}`).single();
+        const { data: existingCustomer } = await supabase.from("customers").select("*").eq("business_id", businessId).eq("phone", `telegram:${userId}`).single();
+        customer = existingCustomer;
 
         if (!customer) {
             const { data: newCustomer, error } = await supabase.from("customers").insert({
@@ -46,7 +128,8 @@ serve(async (req) => {
         }
 
         // 2. FIND OR CREATE CONVERSATION
-        let { data: conversation } = await supabase.from("conversations").select("*").eq("business_id", businessId).eq("customer_id", customer.id).eq("channel", "telegram").eq("status", "active").single();
+        const { data: existingConvo } = await supabase.from("conversations").select("*").eq("business_id", businessId).eq("customer_id", customer.id).eq("channel", "telegram").eq("status", "active").single();
+        conversation = existingConvo;
 
         if (!conversation) {
             const { data: newConvo, error } = await supabase.from("conversations").insert({
@@ -55,19 +138,24 @@ serve(async (req) => {
             if (error) throw error;
             conversation = newConvo;
         } else {
+            // Update timestamp to mark this as active
             await supabase.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
         }
 
         // 3. DISPATCH HANDLER (PHOTO vs TEXT)
         if (message.photo) {
-            await handlePhotoMessage(message, chatId, businessId, customer, conversation, supabase);
+            await handlePhotoMessage(message, chatId, businessId!, customer, conversation, supabase);
         } else {
-            await handleTextMessage(message, text, chatId, businessId, customer, conversation, supabase);
+            // If /start <id> was used, strip the ID from text so the bot doesn't try to process it as a product query
+            let cleanText = text;
+            if (cleanText.startsWith("/start ")) cleanText = "/start";
+
+            await handleTextMessage(message, cleanText, chatId, businessId!, customer, conversation, supabase);
         }
 
         return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error:", error);
         return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
@@ -131,7 +219,6 @@ async function handlePhotoMessage(message: any, chatId: number, businessId: stri
 
         let match = null;
         if (exactMatches && exactMatches.length > 0) {
-            // Find best match (simple find)
             match = exactMatches[0];
         }
 
@@ -241,7 +328,7 @@ async function handleTextMessage(message: any, text: string, chatId: number, bus
     // Confirmation logic
     const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|add to cart|buy it now|order|confirm|buy)$/i.test(text.trim());
     let lastMentionedProduct = null;
-    let productToOrder = mentionedProduct; // Default to explicitly mentioned
+    let productToOrder = mentionedProduct;
 
     // If confirmation but no product in current text, look at history
     if (isConfirmation && !mentionedProduct) {
@@ -341,7 +428,7 @@ async function sendTelegramPhoto(chatId: number, photoUrl: string, caption: stri
     if (!token) return;
     await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, photo: photoUrl, caption: caption }) // Telegram accepts URL or File ID
+        body: JSON.stringify({ chat_id: chatId, photo: photoUrl, caption: caption })
     });
 }
 
@@ -349,6 +436,6 @@ function detectIntent(text: string): string {
     const lower = text.toLowerCase().trim();
     if (["/start", "/help"].includes(lower)) return "start";
     if (lower.includes("catalog") || lower.includes("products")) return "catalog";
-    if (lower.includes("order") || lower.includes("buy") || lower.includes("want")) return "order";
+    if (lower.includes("order") || lower.includes("buy") || lower.includes("want") || lower.includes("/order")) return "order";
     return "general";
 }

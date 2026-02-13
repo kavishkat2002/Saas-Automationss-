@@ -165,6 +165,10 @@ serve(async (req) => {
                 content: messageText,
                 message_type: "text",
             });
+            // Update conversation to mark as active context for multi-tenancy routing
+            await supabase.from("conversations").update({
+                last_message_at: new Date().toISOString()
+            }).eq("id", conversation.id);
         }
 
         return new Response(JSON.stringify({ success: true, sent }), {
