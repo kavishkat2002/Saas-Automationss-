@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MessageSquare, CreditCard, Users, Banknote } from "lucide-react";
+import { Building2, MessageSquare, CreditCard, Users, Banknote, PhoneCall } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -70,6 +70,7 @@ export default function SettingsPage() {
           <TabsTrigger value="business" className="gap-2"><Building2 className="h-4 w-4" />Business</TabsTrigger>
           <TabsTrigger value="bank" className="gap-2"><Banknote className="h-4 w-4" />Bank & Payment</TabsTrigger>
           <TabsTrigger value="whatsapp" className="gap-2"><MessageSquare className="h-4 w-4" />WhatsApp</TabsTrigger>
+          <TabsTrigger value="voice" className="gap-2"><PhoneCall className="h-4 w-4" />Voice AI</TabsTrigger>
           <TabsTrigger value="plans" className="gap-2"><CreditCard className="h-4 w-4" />Plans</TabsTrigger>
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" />Team</TabsTrigger>
         </TabsList>
@@ -207,6 +208,94 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="voice" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Sinhala AI Voice Agent</CardTitle>
+              <CardDescription>Configure your automated AI voice caller for Sri Lanka</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-primary/5 p-4 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <PhoneCall className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Sinhala Voice Agent Status</p>
+                    <p className="text-sm text-muted-foreground">Active and linked to system details</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">Online</Badge>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Primary Language</Label>
+                  <Select defaultValue="sinhala">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sinhala">Sinhala (Sri Lanka)</SelectItem>
+                      <SelectItem value="english">English (Global)</SelectItem>
+                      <SelectItem value="tamil">Tamil (Sri Lanka)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Voice Personality</Label>
+                  <Select defaultValue="professional">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Personality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="professional">Professional / Polite</SelectItem>
+                      <SelectItem value="friendly">Friendly / Casual</SelectItem>
+                      <SelectItem value="direct">Direct / Sales-focused</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Voice AI Endpoint URL</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value="https://[YOUR_PROJECT].supabase.co/functions/v1/voice-agent" />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText("https://[YOUR_PROJECT].supabase.co/functions/v1/voice-agent");
+                    toast({ title: "Link copied" });
+                  }}>Copy</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Copy this URL to your Vapi or Retell AI webhook configuration.</p>
+              </div>
+
+              <div className="pt-4 border-t space-y-4">
+                <h3 className="font-medium">Linked SmartBiz Features</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 p-3 border rounded-md">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-sm">Real-time Catalog</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 border rounded-md">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-sm">Order Tracking</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 border rounded-md">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-sm">Customer CRM Sync</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 border rounded-md">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                    <span className="text-sm">Voice-to-Cart (Beta)</span>
+                  </div>
+                </div>
+              </div>
+
+              <Button className="w-full">Update Voice Agent Settings</Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="whatsapp" className="mt-6">

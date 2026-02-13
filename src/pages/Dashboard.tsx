@@ -13,7 +13,8 @@ import {
   Zap,
   AlertCircle,
   CheckCircle,
-  TrendingDown
+  TrendingDown,
+  PhoneCall
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -130,12 +131,12 @@ export default function Dashboard() {
 
   // Generate mock AI activity if no real data
   const mockAiActivity = [
+    { type: "voice", message: "Sinhala Agent handled call from +9477***1234", icon: PhoneCall, color: "text-purple-500" },
     { type: "order", message: "AI closed order for Rs. 7,500", icon: CheckCircle, color: "text-green-500" },
     { type: "lead", message: "New lead detected from WhatsApp", icon: Zap, color: "text-blue-500" },
     { type: "prediction", message: "Demand spike predicted for Product A", icon: TrendingUp, color: "text-orange-500" },
-    { type: "classification", message: "Customer classified as high-value", icon: Brain, color: "text-purple-500" },
+    { type: "classification", message: "Voice customer classified as high-value", icon: Brain, color: "text-purple-500" },
     { type: "alert", message: "Stock running low for 3 products", icon: AlertCircle, color: "text-red-500" },
-    { type: "insight", message: "Best time to reach customers: 2-4 PM", icon: Brain, color: "text-indigo-500" },
   ];
 
   return (
@@ -147,31 +148,53 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Real-time intelligence for your business</p>
       </div>
 
-      {/* Bot Connection Card */}
-      <Card className="bg-primary/5 border-primary/20 mb-6">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
-            Connect Telegram Bot
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            To connect your Telegram account to <strong>{business?.name || "this store"}</strong>, send the following command to your bot:
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="bg-muted px-4 py-2 rounded-md text-sm font-mono flex-1 overflow-x-auto">
-              /start {businessId}
-            </code>
-            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`/start ${businessId}`); }}>
-              Copy
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            This creates a unique connection for this business ID: <span className="font-mono">{businessId}</span>. Share this with your customers to route them to this store.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Bot Connection Card */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <MessageCircle className="h-4 w-5 text-primary" />
+              Telegram Channel
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Send this command to your Telegram bot to link this store:
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="bg-muted px-4 py-1.5 rounded-md text-sm font-mono flex-1 overflow-x-auto">
+                /start {businessId}
+              </code>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`/start ${businessId}`); }}>
+                Copy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Voice AI Connection Card */}
+        <Card className="bg-purple-500/5 border-purple-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <PhoneCall className="h-4 w-5 text-purple-600" />
+              Sinhala Voice AI
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              AI Voice Webhook for Vapi/Retell (Linked to SL numbers):
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="bg-muted px-4 py-1.5 rounded-md text-sm font-mono flex-1 overflow-x-auto">
+                https://{businessId?.substring(0, 8)}.supabase.co/v1/voice
+              </code>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`https://${businessId?.substring(0, 8)}.supabase.co/v1/voice`); }}>
+                Copy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Business Health Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
