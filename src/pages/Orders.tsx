@@ -237,11 +237,14 @@ export default function Orders() {
     if (!selectedProduct) return;
     const product = products?.find(p => p.id === selectedProduct);
     if (!product) return;
+    const qty = parseFloat(quantity);
+    if (isNaN(qty) || qty <= 0) return;
+
     const existingItem = orderItems.find(item => item.product_id === selectedProduct);
     if (existingItem) {
       setOrderItems(orderItems.map(item =>
         item.product_id === selectedProduct
-          ? { ...item, quantity: item.quantity + parseInt(quantity) }
+          ? { ...item, quantity: item.quantity + qty }
           : item
       ));
     } else {
@@ -250,7 +253,7 @@ export default function Orders() {
         {
           product_id: product.id,
           product_name: product.name,
-          quantity: parseInt(quantity),
+          quantity: qty,
           unit_price: Number(product.price),
         },
       ]);
@@ -271,6 +274,9 @@ export default function Orders() {
     setCustomMessage("");
     setManageOpen(true);
   };
+
+  const selectedProductDetails = products?.find(p => p.id === selectedProduct);
+  const quantityStep = (selectedProductDetails as any)?.stock_unit === "Kg" ? "0.001" : "1";
 
   return (
     <div className="space-y-6">
@@ -319,11 +325,12 @@ export default function Orders() {
                   </Select>
                   <Input
                     type="number"
-                    min="1"
+                    min="0.001"
+                    step={quantityStep}
                     value={quantity}
                     onChange={e => setQuantity(e.target.value)}
-                    className="w-20"
-                    placeholder="Qty"
+                    className="w-24"
+                    placeholder={(selectedProductDetails as any)?.stock_unit || "Qty"}
                   />
                   <Button type="button" onClick={addProductToOrder} variant="secondary">
                     Add
