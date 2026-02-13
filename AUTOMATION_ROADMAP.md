@@ -25,10 +25,9 @@
 
 ### 3. Products Module ✅
 
-- Full CRUD operations
-- Image URL support
-- Stock tracking
-- Category management
+- Full CRUD operations (Add, Edit, Delete)
+- Image Upload support (Supabase Storage)
+- Flexible Pricing (Rs/$) and Units (Qty/Kg)
 - Real-time dashboard updates
 
 ### 4. Customers Module ✅  
@@ -41,6 +40,9 @@
 ### 5. Orders Module ✅
 
 - Complete order creation system
+- Detailed Order Management (Edit, Delete)
+- Status Updates with Custom Messages
+- Automated Telegram Notifications (Edge Function)
 - Multi-product orders with quantities
 - Automatic customer stats updates
 - AI activity logging
