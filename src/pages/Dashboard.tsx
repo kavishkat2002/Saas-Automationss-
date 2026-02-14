@@ -149,12 +149,6 @@ export default function Dashboard() {
         </h1>
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground mt-1">Real-time intelligence for your business</p>
-          <Link to="/proposal">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Award className="h-4 w-4" />
-              View Visual Proposal
-            </Button>
-          </Link>
         </div>
       </div>
 
