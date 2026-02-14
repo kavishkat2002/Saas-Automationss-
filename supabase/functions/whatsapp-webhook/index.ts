@@ -119,12 +119,28 @@ serve(async (req) => {
         let conversation: any = null;
         let customer: any = null;
 
-        const { data: allBiz } = await supabase.from("businesses").select("id").limit(1);
-        if (allBiz && allBiz.length > 0) businessId = allBiz[0].id;
+        // Try to find the business by the WhatsApp Phone Number ID
+        const { data: matchedBiz } = await supabase.from("businesses")
+            .select("id")
+            .eq("whatsapp_phone_number_id", businessPhoneNumberId)
+            .maybeSingle();
+
+        if (matchedBiz) {
+            businessId = matchedBiz.id;
+            console.log(`Business matched via Phone ID: ${businessId}`);
+        } else {
+            console.log(`No business matched for Phone ID: ${businessPhoneNumberId}. Falling back...`);
+            // Fallback for simulation/legacy - pick first business
+            const { data: allBiz } = await supabase.from("businesses").select("id").limit(1);
+            if (allBiz && allBiz.length > 0) {
+                businessId = allBiz[0].id;
+                console.log(`Using fallback business: ${businessId}`);
+            }
+        }
 
         if (!businessId) {
             // Auto-create business if missing (Self-healing)
-            console.log("No business found. Creating default business...");
+            console.log("No business found in database. Creating default business...");
             const { data: newBiz, error: createBizError } = await supabase.from("businesses").insert({
                 name: "My SmartBiz Store",
                 settings: { currency: "USD" }
@@ -136,7 +152,7 @@ serve(async (req) => {
             }
             businessId = newBiz.id;
         }
-        console.log("Business Context:", businessId);
+        console.log("Final Business Context:", businessId);
 
         const { data: existingCustomer } = await supabase.from("customers").select("*").eq("business_id", businessId).eq("phone", from).single();
         customer = existingCustomer;

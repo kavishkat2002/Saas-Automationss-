@@ -43,8 +43,7 @@ serve(async (req) => {
                     const phone = formatSLNumber(args.phone_number);
                     const { data: orders } = await supabase
                         .from("orders")
-                        .select("id, status, total_amount, created_at")
-                        .innerJoin("customers", "orders.customer_id", "customers.id")
+                        .select("id, status, total_amount, created_at, customers!inner(phone)")
                         .eq("customers.phone", phone)
                         .order("created_at", { ascending: false })
                         .limit(1);
@@ -75,11 +74,14 @@ serve(async (req) => {
         // Handle Assistant Request (Initial Prompt / System Config)
         // This is used if using Custom LLM or dynamic system prompt
         if (message?.type === "assistant-request") {
-            const { data: business } = await supabase
+            // In a real scenario, you'd find by phone number called or a custom header
+            // For now, we look for the first business or one that has voice enabled
+            const { data: businesses } = await supabase
                 .from("businesses")
                 .select("*")
-                .limit(1)
-                .single();
+                .limit(5);
+
+            const business = businesses?.[0]; // Fallback to first
 
             const systemPrompt = `
 You are a friendly and professional AI sales assistant for ${business?.name || "SmartBiz Store"} in Sri Lanka.

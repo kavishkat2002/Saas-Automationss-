@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const [businessType, setBusinessType] = useState("");
   const [description, setDescription] = useState("");
   const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
 
   const updateBusiness = useMutation({
     mutationFn: async () => {
@@ -51,6 +52,7 @@ export default function SettingsPage() {
         business_type: businessType || (business as any)?.business_type || null,
         description: description || (business as any)?.description || null,
         contact_phone: whatsappPhone || business?.contact_phone || null,
+        whatsapp_phone_number_id: whatsappPhoneNumberId || business?.whatsapp_phone_number_id || null,
       }).eq("id", business!.id);
       if (error) throw error;
     },
@@ -313,6 +315,25 @@ export default function SettingsPage() {
                   defaultValue={business?.contact_phone || ""}
                   onChange={e => setWhatsappPhone(e.target.value)}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>WhatsApp Phone Number ID <span className="text-xs text-muted-foreground">(From Meta Developer Portal)</span></Label>
+                <Input
+                  placeholder="e.g. 1029384756..."
+                  defaultValue={business?.whatsapp_phone_number_id || ""}
+                  onChange={e => setWhatsappPhoneNumberId(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Your Webhook URL</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={`https://rskkufaczzltlwtpyect.supabase.co/functions/v1/whatsapp-webhook`} />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(`https://rskkufaczzltlwtpyect.supabase.co/functions/v1/whatsapp-webhook`);
+                    toast({ title: "Webhook URL copied" });
+                  }}>Copy</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Copy this to your Meta App Configuration. Set Verify Token to: <code>smartbiz_verify_token</code></p>
               </div>
               {userRole === "owner" && (
                 <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending}>Save WhatsApp Settings</Button>

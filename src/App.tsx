@@ -14,6 +14,8 @@ import ChatPage from "./pages/ChatPage";
 import Analytics from "./pages/Analytics";
 import AIInsights from "./pages/AIInsights";
 import SettingsPage from "./pages/SettingsPage";
+import VisualProposal from "./pages/VisualProposal";
+import FormalProposal from "./pages/FormalProposal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,7 +42,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/presentation" replace />} />
+            <Route path="/presentation" element={<VisualProposal />} />
+            <Route path="/proposal" element={<FormalProposal />} />
             <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/customers" element={<ProtectedRoute><DashboardLayout><Customers /></DashboardLayout></ProtectedRoute>} />

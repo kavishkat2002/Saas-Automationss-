@@ -14,11 +14,13 @@ import {
   AlertCircle,
   CheckCircle,
   TrendingDown,
-  PhoneCall
+  PhoneCall,
+  Award
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { businessId, business } = useBusiness();
@@ -145,7 +147,15 @@ export default function Dashboard() {
         <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
           Business Health
         </h1>
-        <p className="text-muted-foreground mt-1">Real-time intelligence for your business</p>
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground mt-1">Real-time intelligence for your business</p>
+          <Link to="/proposal">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Award className="h-4 w-4" />
+              View Visual Proposal
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
