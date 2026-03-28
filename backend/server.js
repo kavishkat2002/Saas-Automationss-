@@ -10,6 +10,8 @@ const productsRouter = require('./routes/products');
 const attendanceRouter = require('./routes/attendance');
 const financeRouter = require('./routes/finance');
 const noticesRouter = require('./routes/notices');
+const ordersRouter = require('./routes/orders');
+const bitzyRouter  = require('./routes/bitzy');
 const db = require('./db');
 
 const app = express();
@@ -29,6 +31,8 @@ app.use('/api/products', productsRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/notices', noticesRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/bitzy',  bitzyRouter);
 
 // Basic health check
 app.get('/health', (req, res) => {

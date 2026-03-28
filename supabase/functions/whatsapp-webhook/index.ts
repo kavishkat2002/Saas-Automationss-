@@ -6,7 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Deno ambient type for VS Code
 declare const Deno: { env: { get(key: string): string | undefined } };
 
-const VERIFY_TOKEN = "mohan_trading_token";
+const VERIFY_TOKEN = "bizz_auto_token";
 
 serve(async (req: Request) => {
   const url = new URL(req.url);
@@ -109,7 +109,7 @@ serve(async (req: Request) => {
 
     switch (nextStep) {
       case "GREETING":
-        outMsg = `Hi 👋 Welcome to *Mohan Trading* 🚗\n\nI am your AI Sales Assistant. How can I help you today?\n\n1️⃣ I want to *Buy* a car\n2️⃣ I want to *Sell* my car\n3️⃣ View latest *Inventory*\n\n(Reply with 1, 2, or 3)`;
+        outMsg = `Hi 👋 Welcome to *Bizz Auto* 🚗\n\nI am your AI Sales Assistant. How can I help you today?\n\n1️⃣ I want to *Buy* a car\n2️⃣ I want to *Sell* my car\n3️⃣ View latest *Inventory*\n\n(Reply with 1, 2, or 3)`;
         nextStep = "INTENT_DISCOVERY";
         break;
 
@@ -123,7 +123,7 @@ serve(async (req: Request) => {
           nextStep = "SELLER_MODEL";
           metadata.intent = "SELL";
         } else if (text === "3") {
-          outMsg = "📋 Check out our latest vehicles here:\n🌐 https://mohantrading.lk/vehicles\n\nSee anything you like? Type *Buy* or reply *1* to proceed!";
+          outMsg = "📋 Check out our latest vehicles here:\n🌐 https://bizzauto.lk/vehicles\n\nSee anything you like? Type *Buy* or reply *1* to proceed!";
           nextStep = "GREETING";
         } else {
           outMsg = "Sorry, I didn't get that 😅\n\nPlease reply with *1*, *2*, or *3* to continue.";
@@ -166,7 +166,7 @@ serve(async (req: Request) => {
         break;
 
       default:
-        outMsg = `Hi 👋 Welcome to *Mohan Trading* 🚗\n\nI am your AI Sales Assistant. How can I help you today?\n\n1️⃣ I want to *Buy* a car\n2️⃣ I want to *Sell* my car\n3️⃣ View latest *Inventory*\n\n(Reply with 1, 2, or 3)`;
+        outMsg = `Hi 👋 Welcome to *Bizz Auto* 🚗\n\nI am your AI Sales Assistant. How can I help you today?\n\n1️⃣ I want to *Buy* a car\n2️⃣ I want to *Sell* my car\n3️⃣ View latest *Inventory*\n\n(Reply with 1, 2, or 3)`;
         nextStep = "INTENT_DISCOVERY";
     }
 

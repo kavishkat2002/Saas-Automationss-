@@ -1,3 +1,7 @@
+//node server.js backend run
+
+
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";

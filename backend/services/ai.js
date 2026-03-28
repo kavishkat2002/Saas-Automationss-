@@ -14,7 +14,7 @@ async function generateSmartReply(userMessage, context) {
       {
         model: 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: `You are an AI sales assistant for Mohan Trading, a premium car dealership. Be helpful, concise, and professional. The user is currently at this stage: ${context.step}. Their name is ${context.name || 'unknown'}.` },
+          { role: 'system', content: `You are an AI sales assistant for Bizz Auto CRM, a premium auto dealership solution. Be helpful, concise, and professional. The user is currently at this stage: ${context.step}. Their name is ${context.name || 'unknown'}.` },
           { role: 'user', content: userMessage }
         ]
       },

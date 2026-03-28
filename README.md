@@ -1,6 +1,6 @@
-#Trader CRM
+# Bizz Auto CRM
 
-Mohan Trader CRM is a premium, AI-powered automotive business management engine. It transforms traditional dealership operations into a high-efficiency digital ecosystem by integrating **WhatsApp Business API**, **Supabase**, and **Real-time Lead Management**.
+Bizz Auto CRM is a premium, AI-powered automotive business management engine. It transforms traditional dealership operations into a high-efficiency digital ecosystem by integrating **WhatsApp Business API**, **Supabase**, and **Real-time Lead Management**.
 
 ---
 
@@ -100,4 +100,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ---
 
 **Developed & Designed by [Creativex Lab](#)**
-*Driving Trust, Delivering Dreams.*
+*Next-Gen CRM for Next Level Business*

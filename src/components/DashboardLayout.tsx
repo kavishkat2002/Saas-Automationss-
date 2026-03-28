@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Users, MessageSquare, ListTodo,
-  BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, Package, Menu, X, Shield, CalendarClock, Banknote, Bell
+  BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, Package, Menu, X, Shield, CalendarClock, Banknote, Bell, ShoppingBag, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -16,13 +17,15 @@ import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Products", icon: Package, path: "/dashboard/products" },
-  { label: "Leads", icon: Users, path: "/dashboard/leads" },
+  { label: "Products",  icon: Package,         path: "/dashboard/products" },
+  { label: "Orders",    icon: ShoppingBag,      path: "/dashboard/orders" },
+  { label: "Leads",     icon: Users,            path: "/dashboard/leads" },
   { label: "Noticeboard", icon: Bell, path: "/dashboard/noticeboard" },
   { label: "Chat Box", icon: MessageSquare, path: "/dashboard/chat" },
   { label: "Attendance", icon: CalendarClock, path: "/dashboard/attendance" },
-  { label: "Finance", icon: Banknote, path: "/dashboard/finance" },
-  { label: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+  { label: "Finance",    icon: Banknote,         path: "/dashboard/finance" },
+  { label: "BitzyAI",   icon: Brain,             path: "/dashboard/bitzy" },
+  { label: "Analytics", icon: BarChart3,          path: "/dashboard/analytics" },
   { label: "Settings", icon: Settings, path: "/dashboard/settings" },
 ];
 
@@ -35,6 +38,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { businessName, tagline, logoUrl } = useBusiness();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
@@ -43,9 +47,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (item.label === "Noticeboard") return false;
     if (isElevated) return true;
     if (user?.role === 'accountant') {
-      return ["Dashboard", "Products", "Leads", "Attendance", "Finance"].includes(item.label);
+      return ["Dashboard", "Products", "Orders", "Leads", "Attendance", "Finance"].includes(item.label);
     }
-    return ["Dashboard", "Products", "Leads", "Chat Box", "Attendance"].includes(item.label);
+    return ["Dashboard", "Products", "Orders", "Leads", "Chat Box", "Attendance"].includes(item.label);
   });
 
   const [commissionTotal, setCommissionTotal] = useState<number>(0);
@@ -104,16 +108,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo area with MohanTrader branding */}
+      {/* Logo area — dynamic business branding */}
       <div className={cn(
         "flex items-center gap-3 px-5 py-5",
         collapsed && "justify-center px-3"
       )}>
-        <img 
-          src="/mohantrader-logo.png" 
-          alt="MohanTrader" 
-          className="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 shrink-0"
-        />
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={businessName}
+            className="h-10 w-10 rounded-xl object-cover shrink-0"
+          />
+        ) : (
+          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+            <span className="text-white font-black text-lg">{businessName.charAt(0)}</span>
+          </div>
+        )}
         <AnimatePresence>
           {!collapsed && (
             <motion.div
@@ -123,15 +133,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               className="overflow-hidden"
             >
               <p className="text-[17px] font-semibold text-white leading-tight">
-                Mohan Trader
+                {businessName}
               </p>
               <p className="text-[10px] text-white/40 tracking-wide italic leading-tight mt-0.5">
-                Delivering Dreams, Driving Trust
+                {tagline}
               </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
 
       {/* Divider */}
       <div className="mx-4 border-t border-sidebar-border" />
@@ -307,9 +318,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Design & Developed By © 2026 <span className="font-medium text-foreground/70">Creativex Lab</span> All Rights Reserved.
             </p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-              Powered by <span className="font-medium text-foreground/50">Clientplus Digital</span>
-            </p>
+
           </footer>
         </div>
       </main>

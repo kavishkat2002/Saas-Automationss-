@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBusiness } from "@/hooks/useBusiness";
+import { useBusiness as useBusinessHook } from "@/hooks/useBusiness";
+import { useBusiness as useBusinessBranding } from "@/contexts/BusinessContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MessageSquare, CreditCard, Users, Banknote, PhoneCall } from "lucide-react";
+import { Building2, MessageSquare, CreditCard, Users, Banknote, PhoneCall, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -20,11 +20,14 @@ import {
 } from "@/components/ui/select";
 
 function TeamManager() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
+
+  const canManage = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
   const fetchUsers = () => {
     fetch("http://localhost:5001/api/users")
@@ -47,7 +50,7 @@ function TeamManager() {
       const res = await fetch("http://localhost:5001/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: newEmail, password: newPassword, role: "sales" }) // Default to staff
+        body: JSON.stringify({ email: newEmail, password: newPassword, role: "sales" })
       });
       const data = await res.json();
       if (res.ok) {
@@ -84,6 +87,22 @@ function TeamManager() {
     }
   };
 
+  const deleteMember = async (id: number, email: string) => {
+    if (!confirm(`Are you sure you want to remove "${email}" from the team? This action cannot be undone.`)) return;
+    try {
+      const res = await fetch(`http://localhost:5001/api/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast({ title: "Member removed", description: `${email} has been removed from the team.` });
+        fetchUsers();
+      } else {
+        toast({ title: "Failed to remove member", variant: "destructive" });
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ title: "An error occurred", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <form onSubmit={addMember} className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end p-4 border border-primary/20 bg-primary/5 rounded-lg">
@@ -91,7 +110,7 @@ function TeamManager() {
           <Label className="text-[10px] uppercase tracking-wider text-primary/70 font-semibold">Email Address</Label>
           <Input 
             type="email" 
-            placeholder="staff@mohantrading.com" 
+            placeholder="staff@yourbusiness.com" 
             className="h-9 text-sm bg-white" 
             value={newEmail} 
             onChange={e => setNewEmail(e.target.value)} 
@@ -115,23 +134,34 @@ function TeamManager() {
       <div className="space-y-3">
         <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Current Members</h4>
         {users.map(u => (
-          <div key={u.id} className="flex items-center justify-between p-3.5 border border-border bg-background/50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-foreground">{u.email}</p>
+          <div key={u.id} className="flex items-center justify-between p-3.5 border border-border bg-background/50 rounded-lg gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">{u.email}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">Joined {new Date(u.created_at).toLocaleDateString()}</p>
             </div>
-            <Select value={u.role || 'sales'} onValueChange={(val) => changeRole(u.id, val)}>
-              <SelectTrigger className="w-32 h-8 text-xs bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="owner">Owner</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="accountant">Accountant</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-                <SelectItem value="sales">Sales Person</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 shrink-0">
+              <Select value={u.role || 'sales'} onValueChange={(val) => changeRole(u.id, val)}>
+                <SelectTrigger className="w-32 h-8 text-xs bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="sales">Sales Person</SelectItem>
+                </SelectContent>
+              </Select>
+              {canManage && Number(u.id) !== Number(currentUser?.id) && (
+                <button
+                  onClick={() => deleteMember(u.id, u.email)}
+                  className="h-8 w-8 flex items-center justify-center rounded-md text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors border border-transparent hover:border-rose-200"
+                  title="Remove member"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {users.length === 0 && <p className="text-sm text-muted-foreground">Loading team members...</p>}
@@ -140,11 +170,27 @@ function TeamManager() {
   );
 }
 
+
+function SectionCard({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-border rounded-lg bg-white">
+      <div className="px-6 py-4 border-b border-border">
+        <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
+        {desc && <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>}
+      </div>
+      <div className="p-6 space-y-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { business, userRole } = useBusiness();
+  const { business, userRole } = useBusinessHook();
+  const { businessName: ctxName, tagline: ctxTagline, logoUrl: ctxLogo, updateBusiness: updateBranding } = useBusinessBranding();
   const { toast } = useToast();
-  const qc = useQueryClient();
+
 
 
   const [name, setName] = useState("");
@@ -161,30 +207,24 @@ export default function SettingsPage() {
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
 
+  // Sidebar branding state — synced from context
+  const [sName, setSName] = useState(ctxName);
+  const [sTagline, setSTagline] = useState(ctxTagline);
+  const [sLogo, setSLogo] = useState(ctxLogo);
 
 
-  const updateBusiness = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("businesses").update({
-        name: name || business?.name,
-        contact_email: contactEmail || business?.contact_email,
-        bank_name: bankName || business?.bank_name || null,
-        bank_account_number: bankAccountNumber || business?.bank_account_number || null,
-        bank_account_holder: bankAccountHolder || business?.bank_account_holder || null,
-        bank_branch: bankBranch || business?.bank_branch || null,
-        bank_swift_code: bankSwiftCode || business?.bank_swift_code || null,
-        payment_gateway_link: paymentGatewayLink || business?.payment_gateway_link || null,
-        payment_gateway_name: paymentGatewayName || business?.payment_gateway_name || null,
-        business_type: businessType || (business as any)?.business_type || null,
-        description: description || (business as any)?.description || null,
-        contact_phone: whatsappPhone || business?.contact_phone || null,
-        whatsapp_phone_number_id: whatsappPhoneNumberId || business?.whatsapp_phone_number_id || null,
-      }).eq("id", business!.id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["business"] }); toast({ title: "Settings updated" }); },
-    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
+
+  const saveBusinessSettings = () => {
+    // Save branding (name, tagline, logo) instantly to sidebar via context + localStorage
+    updateBranding({ businessName: sName, tagline: sTagline, logoUrl: sLogo });
+
+    // Save additional business settings to localStorage
+    const extras = { businessType, description, contactEmail, whatsappPhone, whatsappPhoneNumberId };
+    localStorage.setItem("business_extras", JSON.stringify(extras));
+
+    toast({ title: "Settings Saved", description: "Business profile updated successfully." });
+  };
+
 
   if (['accountant', 'staff', 'sales'].includes(user?.role || "")) {
     return (
@@ -200,17 +240,6 @@ export default function SettingsPage() {
     );
   }
 
-  const SectionCard = ({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) => (
-    <div className="border border-border rounded-lg bg-white">
-      <div className="px-6 py-4 border-b border-border">
-        <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
-        {desc && <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>}
-      </div>
-      <div className="p-6 space-y-4">
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-8">
@@ -230,11 +259,61 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="business" className="mt-6">
-          <SectionCard title="Business Profile" desc="Update your business information">
+          <SectionCard title="Business Profile" desc="Update your business name, branding, and information">
+
+            {/* Business Name — also syncs sidebar */}
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Business Name</Label>
-              <Input defaultValue={business?.name} onChange={e => setName(e.target.value)} className="h-9 text-sm" />
+              <Input
+                value={sName}
+                onChange={e => { setSName(e.target.value); setName(e.target.value); }}
+                placeholder="e.g. My Business"
+                className="h-9 text-sm"
+              />
             </div>
+
+            {/* Tagline */}
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tagline <span className="normal-case text-muted-foreground/60">(shown in sidebar)</span></Label>
+              <Input
+                value={sTagline}
+                onChange={e => setSTagline(e.target.value)}
+                placeholder="e.g. Automate. Sell. Grow."
+                className="h-9 text-sm"
+              />
+            </div>
+
+            {/* Logo Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Business Logo <span className="normal-case text-muted-foreground/60">(shown in sidebar)</span></Label>
+              <div className="flex items-center gap-3">
+                {sLogo && (
+                  <img src={sLogo} alt="Logo preview" className="h-10 w-10 rounded-xl object-cover border border-border shrink-0" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block text-sm text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer flex-1"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => setSLogo(ev.target?.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </div>
+              <Input
+                value={sLogo}
+                onChange={e => setSLogo(e.target.value)}
+                placeholder="Or paste a logo URL here..."
+                className="h-9 text-sm mt-1.5"
+              />
+            </div>
+
+            <div className="border-t border-border pt-4 mt-2" />
+
+            {/* Business Type */}
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Business Type</Label>
               <Select onValueChange={setBusinessType} defaultValue={(business as any)?.business_type || ""}>
@@ -251,32 +330,43 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Description */}
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                 Description <span className="normal-case text-muted-foreground/60">(Used by AI to answer customers)</span>
               </Label>
               <Textarea
-                placeholder="e.g. We sell premium used cars with warranty..."
+                placeholder="e.g. We sell premium products with fast delivery and warranty..."
                 defaultValue={(business as any)?.description || ""}
                 onChange={e => setDescription(e.target.value)}
                 className="min-h-[80px] text-sm"
               />
             </div>
+
+            {/* Contact Email */}
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Contact Email</Label>
               <Input type="email" defaultValue={business?.contact_email || ""} onChange={e => setContactEmail(e.target.value)} className="h-9 text-sm" />
             </div>
+
             <div className="flex items-center gap-2 pt-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Your Role:</Label>
-              <Badge variant="outline" className="text-[11px] rounded-md px-2 py-0.5 font-medium bg-primary/5 text-primary border-primary/20">{userRole || "—"}</Badge>
+              <Badge variant="outline" className="text-[11px] rounded-md px-2 py-0.5 font-medium bg-primary/5 text-primary border-primary/20">{userRole || user?.role || "—"}</Badge>
             </div>
+
             {['owner', 'admin'].includes(user?.role) && (
-              <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending} className="bg-primary text-white hover:bg-primary/90 text-sm h-9 mt-2 shadow-sm shadow-primary/20">
+              <Button
+                onClick={saveBusinessSettings}
+                className="bg-primary text-white hover:bg-primary/90 text-sm h-9 mt-2 shadow-sm shadow-primary/20"
+              >
                 Save Changes
               </Button>
             )}
+
           </SectionCard>
         </TabsContent>
+
 
         <TabsContent value="bank" className="mt-6 space-y-4">
           <SectionCard title="Bank Details" desc="Configure your bank account details to share with customers for payments">
@@ -312,7 +402,7 @@ export default function SettingsPage() {
               <Input type="url" placeholder="e.g., https://paypal.me/yourbusiness" defaultValue={business?.payment_gateway_link || ""} onChange={e => setPaymentGatewayLink(e.target.value)} className="h-9 text-sm" />
             </div>
             {['owner', 'admin'].includes(user?.role) && (
-              <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending} className="bg-primary text-white hover:bg-primary/90 text-sm h-9 shadow-sm shadow-primary/20">
+              <Button onClick={() => saveBusinessSettings()} disabled={false} className="bg-primary text-white hover:bg-primary/90 text-sm h-9 shadow-sm shadow-primary/20">
                 Save Payment Settings
               </Button>
             )}
@@ -420,7 +510,7 @@ export default function SettingsPage() {
               <p className="text-[11px] text-muted-foreground">Copy this to your Meta App Configuration. Set Verify Token to: <code className="px-1 py-0.5 bg-primary/5 text-primary rounded text-[10px]">smartbiz_verify_token</code></p>
             </div>
             {['owner', 'admin'].includes(user?.role) && (
-              <Button onClick={() => updateBusiness.mutate()} disabled={updateBusiness.isPending} className="bg-primary text-white hover:bg-primary/90 text-sm h-9 shadow-sm shadow-primary/20">
+              <Button onClick={() => saveBusinessSettings()} disabled={false} className="bg-primary text-white hover:bg-primary/90 text-sm h-9 shadow-sm shadow-primary/20">
                 Save WhatsApp Settings
               </Button>
             )}

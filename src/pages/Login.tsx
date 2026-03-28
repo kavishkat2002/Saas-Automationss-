@@ -42,18 +42,18 @@ export default function Login() {
         <div className="relative z-10 px-16 text-center">
           {/* MohanTrader Logo */}
           <img 
-            src="/mohantrader-logo.png" 
-            alt="MohanTrader" 
-            className="h-24 w-24 mx-auto mb-8 object-contain rounded-2xl bg-white/5 p-2"
+            src="/creativex-logo.png" 
+            alt="Creativex Technology" 
+            className="h-24 w-auto mx-auto mb-8 object-contain rounded-2xl bg-white p-4 shadow-xl"
           />
           <h1 className="text-4xl font-semibold text-white tracking-tight leading-tight">
-            Mohan Trader
+            Bizz Auto CRM
           </h1>
           <p className="text-white/50 mt-2 text-base italic font-display tracking-wide">
-            Delivering Dreams, Driving Trust
+            Next-Gen CRM for Next Level Business
           </p>
           <p className="text-white/30 mt-4 text-sm max-w-sm mx-auto leading-relaxed">
-            Your complete CRM for managing vehicle inventory, leads, and sales pipeline — all in one place.
+            Your complete CRM for managing auto sales, inventory, and customer relationships — all in one place.
           </p>
           {/* Decorative dots */}
           <div className="flex items-center justify-center gap-2 mt-8">
@@ -75,13 +75,13 @@ export default function Login() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <img 
-              src="/mohantrader-logo.png" 
-              alt="MohanTrader" 
-              className="h-12 w-12 rounded-xl object-contain"
+              src="/creativex-logo.png" 
+              alt="Creativex Technology" 
+              className="h-12 w-auto rounded-xl object-contain bg-slate-50 p-2 border border-slate-100"
             />
             <div>
-              <p className="text-lg font-semibold">Mohan Trader</p>
-              <p className="text-[10px] text-muted-foreground italic">Delivering Dreams, Driving Trust</p>
+              <p className="text-lg font-semibold">Bizz Auto CRM</p>
+              <p className="text-[10px] text-muted-foreground italic">Next-Gen CRM for Next Level Business</p>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export default function Login() {
               </label>
               <Input
                 type="email"
-                placeholder="sales@mohantrader.com"
+                placeholder="sales@bizzauto.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -130,7 +130,7 @@ export default function Login() {
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-8 italic">
-            Mohan Trader · Delivering Dreams, Driving Trust
+            Bizz Auto CRM · Next-Gen CRM for Next Level Business
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { BusinessProvider } from "@/contexts/BusinessContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -16,6 +17,8 @@ import Products from "./pages/Products";
 import Attendance from "./pages/Attendance";
 import Finance from "./pages/Finance";
 import Noticeboard from "./pages/Noticeboard";
+import Orders from "./pages/Orders";
+import BitzyAI from "./pages/BitzyAI";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <BusinessProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -50,12 +54,15 @@ const App = () => (
             <Route path="/dashboard/attendance" element={<ProtectedRoute><DashboardLayout><Attendance /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/finance" element={<ProtectedRoute><DashboardLayout><Finance /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/noticeboard" element={<ProtectedRoute><DashboardLayout><Noticeboard /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/orders" element={<ProtectedRoute><DashboardLayout><Orders /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/bitzy" element={<ProtectedRoute><DashboardLayout><BitzyAI /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/analytics" element={<ProtectedRoute><DashboardLayout><Analytics /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardLayout><SettingsPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </BusinessProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
