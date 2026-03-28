@@ -365,9 +365,9 @@ export default function SettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Voice AI Endpoint URL</Label>
               <div className="flex gap-2">
-                <Input readOnly value="https://[YOUR_PROJECT].supabase.co/functions/v1/voice-agent" className="h-9 text-sm font-mono text-xs" />
+                <Input readOnly value={`${import.meta.env.VITE_SUPABASE_URL || 'https://[YOUR_PROJECT].supabase.co'}/functions/v1/voice-agent`} className="h-9 text-sm font-mono text-xs" />
                 <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => {
-                  navigator.clipboard.writeText("https://[YOUR_PROJECT].supabase.co/functions/v1/voice-agent");
+                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL || 'https://[YOUR_PROJECT].supabase.co'}/functions/v1/voice-agent`);
                   toast({ title: "Link copied" });
                 }}>Copy</Button>
               </div>
@@ -411,9 +411,9 @@ export default function SettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Your Webhook URL</Label>
               <div className="flex gap-2">
-                <Input readOnly value={`https://rskkufaczzltlwtpyect.supabase.co/functions/v1/whatsapp-webhook`} className="h-9 text-sm font-mono text-xs" />
+                <Input readOnly value={`${import.meta.env.VITE_SUPABASE_URL || 'https://[YOUR_PROJECT].supabase.co'}/functions/v1/whatsapp-webhook`} className="h-9 text-sm font-mono text-xs" />
                 <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => {
-                  navigator.clipboard.writeText(`https://rskkufaczzltlwtpyect.supabase.co/functions/v1/whatsapp-webhook`);
+                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL || 'https://[YOUR_PROJECT].supabase.co'}/functions/v1/whatsapp-webhook`);
                   toast({ title: "Webhook URL copied" });
                 }}>Copy</Button>
               </div>

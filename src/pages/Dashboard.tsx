@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Car, Users, Target, TrendingUp, Bell } from "lucide-react";
+import { Package, Users, Target, TrendingUp, Bell } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -19,7 +19,7 @@ export default function Dashboard() {
         setStats({
           leads: data.length,
           new: data.filter((l: any) => l.status === "New").length,
-          closed: data.filter((l: any) => l.status === "Closed Deal").length,
+          closed: data.filter((l: any) => l.status === "Sale Completed").length,
         });
       })
       .catch(console.error);
@@ -33,7 +33,7 @@ export default function Dashboard() {
   const cards = [
     { label: "Total Leads", value: stats.leads, icon: Users, accent: "border-l-primary" },
     { label: "New This Week", value: stats.new, icon: TrendingUp, accent: "border-l-amber-400" },
-    { label: "Closed Deals", value: stats.closed, icon: Target, accent: "border-l-emerald-500" },
+    { label: "Sales Completed", value: stats.closed, icon: Target, accent: "border-l-emerald-500" },
   ];
 
   return (
@@ -44,7 +44,7 @@ export default function Dashboard() {
           Overview
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Your dealership at a glance.
+          Your business at a glance.
         </p>
       </div>
 

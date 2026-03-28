@@ -6,9 +6,9 @@ const db = require('../db');
 router.get('/overview', async (req, res) => {
   try {
     // Today's Sales
-    const todaySales = await db.query("SELECT SUM(selling_price) as total FROM vehicle_sales WHERE sale_date = CURRENT_DATE");
+    const todaySales = await db.query("SELECT SUM(selling_price) as total FROM product_sales WHERE sale_date = CURRENT_DATE");
     // Monthly Sales
-    const monthSales = await db.query("SELECT SUM(selling_price) as total FROM vehicle_sales WHERE sale_date >= date_trunc('month', CURRENT_DATE)");
+    const monthSales = await db.query("SELECT SUM(selling_price) as total FROM product_sales WHERE sale_date >= date_trunc('month', CURRENT_DATE)");
     
     // Total Expenses
     const expenses = await db.query("SELECT SUM(amount) as total FROM expenses");
@@ -55,28 +55,28 @@ router.post('/expenses', async (req, res) => {
 router.get('/sales', async (req, res) => {
   try {
     const { rows } = await db.query(`
-      SELECT vs.*, v.brand, v.purchase_price, v.transport_cost, v.repair_cost, v.registration_fee 
-      FROM vehicle_sales vs 
-      JOIN vehicles v ON vs.vehicle_id = v.id 
-      ORDER BY vs.sale_date DESC
+      SELECT ps.*, p.brand, p.purchase_price, p.transport_cost, p.repair_cost, p.registration_fee 
+      FROM product_sales ps 
+      JOIN products p ON ps.product_id = p.id 
+      ORDER BY ps.sale_date DESC
     `);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
 router.post('/sales', async (req, res) => {
-  const { vehicle_id, lead_id, selling_price, sale_date, payment_method, account } = req.body;
+  const { product_id, lead_id, selling_price, sale_date, payment_method, account } = req.body;
   try {
     const { rows } = await db.query(
-      "INSERT INTO vehicle_sales (vehicle_id, lead_id, selling_price, sale_date, payment_method) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [vehicle_id, lead_id, selling_price, sale_date || new Date(), payment_method]
+      "INSERT INTO product_sales (product_id, lead_id, selling_price, sale_date, payment_method) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [product_id, lead_id, selling_price, sale_date || new Date(), payment_method]
     );
-    // Mark car as stock = 0
-    await db.query("UPDATE vehicles SET stock = stock - 1 WHERE id = $1", [vehicle_id]);
+    // Reduced stock
+    await db.query("UPDATE products SET stock = stock - 1 WHERE id = $1", [product_id]);
     // Record in cash flow
     await db.query(
       "INSERT INTO cash_flow (type, account, amount, description, date) VALUES ('Income', $1, $2, $3, $4)",
-      [account || 'Bank', selling_price, `Vehicle Sale ID: ${vehicle_id}`, sale_date || new Date()]
+      [account || 'Bank', selling_price, `Product Sale ID: ${product_id}`, sale_date || new Date()]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: 'Server error' }); }

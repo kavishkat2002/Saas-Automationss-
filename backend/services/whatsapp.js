@@ -54,22 +54,22 @@ async function handleIncomingMessage(phone, text) {
   // 3. STATE MACHINE (Tier 1 Memory)
   switch (step) {
     case 'START':
-      outMsg = `Hi 👋 Welcome to *Mohan Trading* 🚗\n\nI am your AI Sales Assistant. How can we help you today?\n\n1️⃣ Buy a car\n2️⃣ Sell a car\n3️⃣ View latest Inventory\n\n(Reply with 1, 2, or 3)`;
+      outMsg = `Hi 👋 Welcome to our Business Portal 📦\n\nI am your AI Sales Assistant. How can we help you today?\n\n1️⃣ Buy a product\n2️⃣ View latest Inventory\n3️⃣ Talk to a specialist\n\n(Reply with 1, 2, or 3)`;
       step = 'INTENT_DISCOVERY';
       break;
 
     case 'INTENT_DISCOVERY':
       if (text === '1') {
-        outMsg = "Great! 🚗 What is your name?";
+        outMsg = "Great! 📦 What is your name?";
         step = 'COLLECT_NAME';
         metadata.intent = 'BUY';
       } else if (text === '2') {
-        outMsg = "We can help you sell! What is your name?";
-        step = 'COLLECT_NAME';
-        metadata.intent = 'SELL';
-      } else if (text === '3') {
-        outMsg = "Check out our current fleet here: https://mohantrading.com/vehicles \n\nType 'Buy' if you see something you like!";
+        outMsg = "Check out our current inventory here: http://localhost:5173/dashboard/products \n\nType 'Buy' if you see something you like!";
         step = 'START';
+      } else if (text === '3') {
+        outMsg = "One of our human specialists will follow up with you shortly. What is your name?";
+        step = 'COLLECT_NAME';
+        metadata.intent = 'SUPPORT';
       } else {
         outMsg = "Please reply with 1, 2, or 3 to proceed.";
       }
@@ -79,17 +79,17 @@ async function handleIncomingMessage(phone, text) {
       metadata.name = text;
       await db.query('UPDATE leads SET name = $1 WHERE id = $2', [text, lead.id]);
       if (metadata.intent === 'BUY') {
-        outMsg = `Nice to meet you, ${text}! What type of vehicle are you looking for? (e.g. SUV, Sedan, Van)`;
-        step = 'COLLECT_VEHICLE_TYPE';
+        outMsg = `Nice to meet you, ${text}! What category of product are you looking for? (e.g. Electronics, Furniture, Apparels)`;
+        step = 'COLLECT_PRODUCT_TYPE';
       } else {
-        outMsg = `Nice to meet you, ${text}! What is the Make and Model of the car you wish to sell?`;
-        step = 'COLLECT_SELL_MODEL';
+        outMsg = `Nice to meet you, ${text}! How can we specifically help you today?`;
+        step = 'COLLECT_SUPPORT_QUERY';
       }
       break;
 
-    case 'COLLECT_VEHICLE_TYPE':
+    case 'COLLECT_PRODUCT_TYPE':
       metadata.type = text;
-      outMsg = `Got it. And what is your budget range in LKR? (e.g. 10M - 15M)`;
+      outMsg = `Got it. And what is your budget range in LKR? (e.g. 50,000 - 100,000)`;
       step = 'COLLECT_BUDGET';
       break;
 
@@ -101,25 +101,31 @@ async function handleIncomingMessage(phone, text) {
           // Parse budget for query (simplistic budget limit extraction)
           const maxBudget = parseInt(text.replace(/[^0-9]/g, ''), 10) || 999999999;
           const { rows: matches } = await db.query(
-            'SELECT brand, price, category FROM vehicles WHERE category ILIKE $1 AND price <= $2 LIMIT 3',
+            'SELECT brand, price, category FROM products WHERE category ILIKE $1 AND price <= $2 LIMIT 3',
             [`%${metadata.type}%`, maxBudget]
           );
 
           if (matches.length > 0) {
-            let carList = matches.map(m => `✅ ${m.brand} - LKR ${m.price}`).join('\n');
-            outMsg = `I found some matches 📊:\n\n${carList}\n\nOur specialists will contact you shortly with full details and photos! 🚗💨`;
+            let productList = matches.map(m => `✅ ${m.brand} - LKR ${m.price}`).join('\n');
+            outMsg = `I found some matches 📊:\n\n${productList}\n\nOur specialists will contact you shortly with full details and photos! 📦✨`;
           } else {
-            outMsg = `Thanks! 📊 I'm searching our full network for a ${metadata.type} within your budget. One of our human specialists will follow up with personalized options shortly! 🚗💨`;
+            outMsg = `Thanks! 📊 I'm searching our full network for ${metadata.type} within your budget. One of our human specialists will follow up with personalized options shortly! 📦✨`;
           }
       } catch (err) {
           console.error('Inventory search error:', err);
-          outMsg = "Thank you! Our sales team will follow up with you shortly with personalized options. 🚗💨";
+          outMsg = "Thank you! Our sales team will follow up with you shortly with personalized options. 📦✨";
       }
       
       step = 'COMPLETED';
       // Sync detailed lead info
-      await db.query('UPDATE leads SET interested_car = $1, budget = $2, status = $3 WHERE id = $4', [metadata.type, metadata.budget, 'Warm', lead.id]);
+      await db.query('UPDATE leads SET interested_product = $1, budget = $2, status = $3 WHERE id = $4', [metadata.type, metadata.budget, 'Warm', lead.id]);
       break;
+
+    case 'COLLECT_SUPPORT_QUERY':
+        metadata.query = text;
+        outMsg = "Thank you for your inquiry. A specialist will call or message you back shortly! 📦✨";
+        step = 'COMPLETED';
+        break;
 
     case 'COMPLETED':
       outMsg = "We already have your details! Our team is working on your request. (Reply 'reset' to start over)";

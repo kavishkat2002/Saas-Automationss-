@@ -12,7 +12,7 @@ import Analytics from "./pages/Analytics";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import Leads from "./pages/Leads";
-import Vehicles from "./pages/Vehicles";
+import Products from "./pages/Products";
 import Attendance from "./pages/Attendance";
 import Finance from "./pages/Finance";
 import Noticeboard from "./pages/Noticeboard";
@@ -44,7 +44,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/auth" element={<AuthRoute><Login /></AuthRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
-            <Route path="/dashboard/vehicles" element={<ProtectedRoute><DashboardLayout><Vehicles /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/products" element={<ProtectedRoute><DashboardLayout><Products /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/leads" element={<ProtectedRoute><DashboardLayout><Leads /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/chat" element={<ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/attendance" element={<ProtectedRoute><DashboardLayout><Attendance /></DashboardLayout></ProtectedRoute>} />

@@ -52,7 +52,7 @@ export default function Leads() {
   const [commissionAmount, setCommissionAmount] = useState<string>("");
 
   const [newLead, setNewLead] = useState({
-    name: "", phone: "", interested_car: "", budget: "", status: "New", source: "manual"
+    name: "", phone: "", interested_product: "", budget: "", status: "New", source: "manual"
   });
 
   const fetchLeads = () => {
@@ -84,7 +84,7 @@ export default function Leads() {
       if (res.ok) {
         toast({ title: "Success", description: "Lead added successfully!" });
         setIsOpen(false);
-        setNewLead({ name: "", phone: "", interested_car: "", budget: "", status: "New", source: "manual" });
+        setNewLead({ name: "", phone: "", interested_product: "", budget: "", status: "New", source: "manual" });
         fetchLeads();
       } else {
         const error = await res.json();
@@ -107,7 +107,7 @@ export default function Leads() {
         body: JSON.stringify({
           name: editLead.name,
           phone: editLead.phone,
-          interested_car: editLead.interested_car,
+          interested_product: editLead.interested_product,
           budget: editLead.budget,
           status: editLead.status,
           source: editLead.source || "manual",
@@ -190,7 +190,7 @@ export default function Leads() {
     // Show all leads to everyone so staff can see who is managing which deal
     const matchesSearch = l.name.toLowerCase().includes(search.toLowerCase()) || 
       l.phone.includes(search) ||
-      l.interested_car?.toLowerCase().includes(search.toLowerCase());
+      l.interested_product?.toLowerCase().includes(search.toLowerCase());
     const matchesSource = sourceFilter === "all" || (l.source || "manual") === sourceFilter;
     return matchesSearch && matchesSource;
   });
@@ -200,8 +200,8 @@ export default function Leads() {
       case 'new': return "bg-primary/10 text-primary border-primary/20";
       case 'contacted': return "bg-amber-50 text-amber-700 border-amber-200";
       case 'negotiating': return "bg-violet-50 text-violet-700 border-violet-200";
-      case 'test drive': return "bg-sky-50 text-sky-700 border-sky-200";
-      case 'closed deal': return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case 'product demo': return "bg-sky-50 text-sky-700 border-sky-200";
+      case 'sale completed': return "bg-emerald-50 text-emerald-700 border-emerald-200";
       default: return "bg-muted text-muted-foreground";
     }
   };
@@ -243,8 +243,8 @@ export default function Leads() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Interested Car</Label>
-                  <Input placeholder="e.g. BMW X5" value={newLead.interested_car} onChange={e => setNewLead({...newLead, interested_car: e.target.value})} className="h-9 text-sm" />
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Interested Product</Label>
+                  <Input placeholder="e.g. MacBook Pro" value={newLead.interested_product} onChange={e => setNewLead({...newLead, interested_product: e.target.value})} className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Budget</Label>
@@ -314,7 +314,7 @@ export default function Leads() {
           <div className="relative w-full md:max-w-xs">
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
              <Input 
-               placeholder="Search name, phone, or car..." 
+               placeholder="Search name, phone, or product..." 
                className="pl-9 h-9 text-sm bg-background border-border"
                value={search}
                onChange={e => setSearch(e.target.value)}
@@ -366,7 +366,7 @@ export default function Leads() {
                           <span className="text-xs text-foreground/70">{src.label}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-foreground/80">{lead.interested_car || "—"}</TableCell>
+                      <TableCell className="text-sm text-foreground/80">{lead.interested_product || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground font-mono">{lead.budget || "—"}</TableCell>
                       <TableCell>
                         {lead.current_step && (
@@ -462,8 +462,8 @@ export default function Leads() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Interested Car</Label>
-                  <Input value={editLead.interested_car || ""} onChange={e => setEditLead({...editLead, interested_car: e.target.value})} className="h-9 text-sm" />
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Interested Product</Label>
+                  <Input value={editLead.interested_product || ""} onChange={e => setEditLead({...editLead, interested_product: e.target.value})} className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Budget</Label>
@@ -478,9 +478,9 @@ export default function Leads() {
                     <SelectContent>
                       <SelectItem value="New">New</SelectItem>
                       <SelectItem value="Contacted">Contacted</SelectItem>
-                      <SelectItem value="Test Drive">Test Drive</SelectItem>
+                      <SelectItem value="Product Demo">Product Demo</SelectItem>
                       <SelectItem value="Negotiating">Negotiating</SelectItem>
-                      <SelectItem value="Closed Deal">Closed Deal</SelectItem>
+                      <SelectItem value="Sale Completed">Sale Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -37,26 +37,26 @@ export default function Finance() {
   });
 
   const [newSale, setNewSale] = useState({
-    vehicle_id: "", lead_id: "", selling_price: "", sale_date: new Date().toISOString().split('T')[0], account: "Bank"
+    product_id: "", lead_id: "", selling_price: "", sale_date: new Date().toISOString().split('T')[0], account: "Bank"
   });
 
-  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [overRes, expRes, salesRes, vehRes, leadRes] = await Promise.all([
+      const [overRes, expRes, salesRes, prodRes, leadRes] = await Promise.all([
         fetch("http://localhost:5001/api/finance/overview"),
         fetch("http://localhost:5001/api/finance/expenses"),
         fetch("http://localhost:5001/api/finance/sales"),
-        fetch("http://localhost:5001/api/vehicles"),
+        fetch("http://localhost:5001/api/products"),
         fetch("http://localhost:5001/api/leads")
       ]);
       setOverview(await overRes.json());
       setExpenses(await expRes.json());
       setSales(await salesRes.json());
-      setVehicles(await vehRes.json());
+      setProducts(await prodRes.json());
       setLeads((await leadRes.json()).filter((l: any) => l.status !== 'Closed'));
     } catch (err) {
       console.error(err);
@@ -94,9 +94,9 @@ export default function Finance() {
         body: JSON.stringify(newSale)
       });
       if (res.ok) {
-        toast({ title: "Sale Recorded", description: "Vehicle marked as sold and cash flow updated." });
+        toast({ title: "Sale Recorded", description: "Product marked as sold and cash flow updated." });
         setIsAddingSale(false);
-        setNewSale({ vehicle_id: "", lead_id: "", selling_price: "", sale_date: new Date().toISOString().split('T')[0], account: "Bank" });
+        setNewSale({ product_id: "", lead_id: "", selling_price: "", sale_date: new Date().toISOString().split('T')[0], account: "Bank" });
         fetchData();
       }
     } catch (err) { console.error(err); }
@@ -109,7 +109,7 @@ export default function Finance() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">Mohan Trading Finance</h1>
+          <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">Business Finance Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1 font-medium">Accounting, Profit Analysis & Inventory tracking.</p>
         </div>
         <div className="flex gap-2">
@@ -198,7 +198,7 @@ export default function Finance() {
                 <CardTitle className="text-base text-emerald-600 flex items-center gap-2">
                    <TrendingUp className="h-4 w-4" /> Smart Analysis
                 </CardTitle>
-                <CardDescription>AI predictions on car categories.</CardDescription>
+                <CardDescription>AI predictions on product categories.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                   <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col gap-1">
@@ -225,7 +225,7 @@ export default function Finance() {
            <Card className="border-border shadow-sm overflow-hidden">
              <CardHeader className="bg-primary/5 border-b">
                <CardTitle className="text-lg flex items-center gap-2">
-                 <Briefcase className="h-5 w-5 text-primary" /> Vehicle Sale Ledger
+                 <Briefcase className="h-5 w-5 text-primary" /> Product Sale Ledger
                </CardTitle>
                <CardDescription>Tracking cost structure vs final selling figures per unit.</CardDescription>
              </CardHeader>
@@ -233,7 +233,7 @@ export default function Finance() {
                <Table>
                  <TableHeader className="bg-muted/50">
                    <TableRow>
-                     <TableHead className="text-xs uppercase font-bold py-4 pl-6">Car Model</TableHead>
+                     <TableHead className="text-xs uppercase font-bold py-4 pl-6">Product / Brand</TableHead>
                      <TableHead className="text-xs uppercase font-mono py-4">Total Cost</TableHead>
                      <TableHead className="text-xs uppercase py-4">Sale Price</TableHead>
                      <TableHead className="text-xs uppercase py-4">Profit</TableHead>
@@ -273,23 +273,23 @@ export default function Finance() {
            <Card className="border-border shadow-md">
               <CardHeader>
                  <CardTitle>Inventory Financial Valuation</CardTitle>
-                 <CardDescription>Total capital tied up in vehicle stock including repairs and logistics.</CardDescription>
+                 <CardDescription>Total capital tied up in product stock including additional costs and logistics.</CardDescription>
               </CardHeader>
               <CardContent>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="p-4 rounded-xl bg-muted/40 border border-border">
                        <p className="text-[10px] uppercase font-bold text-muted-foreground mr-auto">Total Stock Value</p>
-                       <p className="text-xl font-black mt-1">Rs. {vehicles.reduce((acc, v) => acc + (Number(v.purchase_price) * v.stock), 0).toLocaleString()}</p>
+                       <p className="text-xl font-black mt-1">Rs. {products.reduce((acc, v) => acc + (Number(v.purchase_price) * v.stock), 0).toLocaleString()}</p>
                     </div>
                     <div className="p-4 rounded-xl bg-muted/40 border border-border">
-                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Repair Investment</p>
-                       <p className="text-xl font-black mt-1">Rs. {vehicles.reduce((acc, v) => acc + (Number(v.repair_cost) * v.stock), 0).toLocaleString()}</p>
+                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Additional Costs</p>
+                       <p className="text-xl font-black mt-1">Rs. {products.reduce((acc, v) => acc + (Number(v.repair_cost) * v.stock), 0).toLocaleString()}</p>
                     </div>
                  </div>
                  <Table>
                     <TableHeader>
                        <TableRow>
-                          <TableHead className="text-xs uppercase">Vehicle</TableHead>
+                          <TableHead className="text-xs uppercase">Product</TableHead>
                           <TableHead className="text-xs uppercase">Purchase</TableHead>
                           <TableHead className="text-xs uppercase">Repairs</TableHead>
                           <TableHead className="text-xs uppercase">Taxes/Other</TableHead>
@@ -297,7 +297,7 @@ export default function Finance() {
                        </TableRow>
                     </TableHeader>
                     <TableBody>
-                       {vehicles.map(v => {
+                       {products.map(v => {
                           const unitCost = Number(v.purchase_price) + Number(v.repair_cost) + Number(v.transport_cost) + Number(v.registration_fee);
                           return (
                              <TableRow key={v.id}>
@@ -320,7 +320,7 @@ export default function Finance() {
              <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                 <div>
                   <CardTitle className="text-lg">Business Daily Ledger</CardTitle>
-                  <CardDescription>All non-vehicle operational expenses.</CardDescription>
+                  <CardDescription>All non-product operational expenses.</CardDescription>
                 </div>
              </CardHeader>
              <CardContent className="p-0">
@@ -371,7 +371,7 @@ export default function Finance() {
                 </CardHeader>
                 <CardContent className="space-y-6 pt-8">
                    <div className="flex justify-between border-b border-white/5 pb-4">
-                      <span className="text-sm text-white/70">Vehicle Sales Gross Revenue</span>
+                      <span className="text-sm text-white/70">Gross Sale Revenue</span>
                       <span className="text-lg font-black font-mono">Rs. {Number(overview?.monthSales || 0).toLocaleString()}</span>
                    </div>
                    <div className="flex justify-between border-b border-white/5 pb-4 text-rose-300">
@@ -445,17 +445,17 @@ export default function Finance() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex justify-center items-center p-4">
            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8 animate-in zoom-in duration-200">
               <div className="flex justify-between items-center mb-6">
-                 <h2 className="text-2xl font-black font-display tracking-tight">Finalize Vehicle Sale</h2>
+                 <h2 className="text-2xl font-black font-display tracking-tight">Finalize Product Sale</h2>
                  <Button variant="ghost" size="icon" className="hover:bg-muted rounded-full" onClick={() => setIsAddingSale(false)}>&times;</Button>
               </div>
               
               <form onSubmit={handleAddSale} className="space-y-5">
                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold text-muted-foreground">Select Vehicle From Stock</Label>
-                    <Select value={newSale.vehicle_id} onValueChange={v => setNewSale({...newSale, vehicle_id: v})}>
-                       <SelectTrigger className="h-11 border-2 focus:border-primary"><SelectValue placeholder="Which car was sold?" /></SelectTrigger>
+                    <Label className="text-xs uppercase font-bold text-muted-foreground">Select Product From Stock</Label>
+                    <Select value={newSale.product_id} onValueChange={v => setNewSale({...newSale, product_id: v})}>
+                       <SelectTrigger className="h-11 border-2 focus:border-primary"><SelectValue placeholder="Which item was sold?" /></SelectTrigger>
                        <SelectContent>
-                          {vehicles.filter(v => v.stock > 0).map(v => (
+                          {products.filter(v => v.stock > 0).map(v => (
                              <SelectItem key={v.id} value={v.id.toString()}>{v.brand} - Rs. {Number(v.price).toLocaleString()}</SelectItem>
                           ))}
                        </SelectContent>

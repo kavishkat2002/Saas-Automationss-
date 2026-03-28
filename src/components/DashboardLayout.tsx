@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Users, MessageSquare, ListTodo,
-  BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, Car, Menu, X, Shield, CalendarClock, Banknote, Bell
+  BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, Package, Menu, X, Shield, CalendarClock, Banknote, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Vehicles", icon: Car, path: "/dashboard/vehicles" },
+  { label: "Products", icon: Package, path: "/dashboard/products" },
   { label: "Leads", icon: Users, path: "/dashboard/leads" },
   { label: "Noticeboard", icon: Bell, path: "/dashboard/noticeboard" },
   { label: "Chat Box", icon: MessageSquare, path: "/dashboard/chat" },
@@ -43,9 +43,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (item.label === "Noticeboard") return false;
     if (isElevated) return true;
     if (user?.role === 'accountant') {
-      return ["Dashboard", "Vehicles", "Leads", "Attendance", "Finance"].includes(item.label);
+      return ["Dashboard", "Products", "Leads", "Attendance", "Finance"].includes(item.label);
     }
-    return ["Dashboard", "Vehicles", "Leads", "Chat Box", "Attendance"].includes(item.label);
+    return ["Dashboard", "Products", "Leads", "Chat Box", "Attendance"].includes(item.label);
   });
 
   const [commissionTotal, setCommissionTotal] = useState<number>(0);
